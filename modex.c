@@ -83,11 +83,15 @@
 static unsigned short mode_X_seq[NUM_SEQUENCER_REGS] = {
     0x0100, 0x2101, 0x0F02, 0x0003, 0x0604
 };
+/* bits 7-0 stored in CRTC register 18H (the last one), bit 8 stored in bit 4 of CRTC register 7
+ * and bit 9 stored in bit 6 of CRTC register 9, 18 pixels, 200 - 18 = 182 * 2 = 364, and it's 
+ * indexed, so 363 in hex is 0x16B
+ */
 static unsigned short mode_X_CRTC[NUM_CRTC_REGS] = {
     0x5F00, 0x4F01, 0x5002, 0x8203, 0x5404, 0x8005, 0xBF06, 0x1F07,
-    0x0008, 0x4109, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x000F,
+    0x0008 , 0x0109, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x000F,
     0x9C10, 0x8E11, 0x8F12, 0x2813, 0x0014, 0x9615, 0xB916, 0xE317,
-    0xFF18
+    0x6B18
 };
 static unsigned char mode_X_attr[NUM_ATTR_REGS * 2] = {
     0x00, 0x00, 0x01, 0x01, 0x02, 0x02, 0x03, 0x03,
@@ -300,7 +304,7 @@ int set_mode_X(void (*horiz_fill_fn)(int, int, unsigned char[SCROLL_X_DIM]),
     }
 
     /* One display page goes at the start of video memory. */
-    target_img = 0x0000;
+    target_img = 0x4000;
 
     /* Map video memory and obtain permission for VGA port access. */
     if (open_memory_and_ports() == -1)
@@ -498,7 +502,8 @@ void show_screen() {
     p_off = (3 - (show_x & 3));
 
     /* Switch to the other target screen in video memory. */
-    target_img ^= 0x4000;
+    if(target_img == 0x6000) target_img = 0xB000;
+    else target_img = 0x6000;
 
     /* Calculate the source address. */
     addr = img3 + (show_x >> 2) + show_y * SCROLL_X_WIDTH;
@@ -702,7 +707,7 @@ int draw_horiz_line(int y) {
     return 0;
 }
 
-#endif /* !defined(TEXT_RESTORE_PROGRAM) */
+#endif /* !defined(TEXT_RESTORE_PROGRAM
 
 /*
  * open_memory_and_ports
