@@ -41,6 +41,12 @@
 #define FONT_WIDTH   8
 #define FONT_HEIGHT  16
 
+/*
+ * text to graphics? 
+ * EXPLAIN HERE
+ */
+unsigned char * text_to_graphics(char * str, unsigned char * buffer);
+
 /* Standard VGA text font. */
 extern unsigned char font_data[256][16];
 

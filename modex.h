@@ -52,7 +52,7 @@
 #define IMAGE_Y_DIM     200   /* pixels                                     */
 #define IMAGE_X_WIDTH   (IMAGE_X_DIM / 4)          /* addresses (bytes)     */
 #define SCROLL_X_DIM    IMAGE_X_DIM                /* full image width      */
-#define SCROLL_Y_DIM    IMAGE_Y_DIM                /* full image width      */
+#define SCROLL_Y_DIM    (IMAGE_Y_DIM - 18)                /* full image width      */
 #define SCROLL_X_WIDTH  (IMAGE_X_DIM / 4)          /* addresses (bytes)     */
 
 /*
@@ -120,6 +120,8 @@ extern void set_view_window(int scr_x, int scr_y);
 /* show the logical view window on the monitor */
 extern void show_screen();
 
+extern void show_statusbar(char * str);
+
 /* clear the video memory in mode X */
 extern void clear_screens();
 
@@ -135,5 +137,7 @@ extern int draw_horiz_line(int y);
 
 /* draw a vertical line at horizontal pixel x within the logical view window */
 extern int draw_vert_line(int x);
+
+void copy_statusbar(unsigned char* img, unsigned short scr_addr);
 
 #endif /* MODEX_H */

@@ -83,13 +83,15 @@
 static unsigned short mode_X_seq[NUM_SEQUENCER_REGS] = {
     0x0100, 0x2101, 0x0F02, 0x0003, 0x0604
 };
-/* bits 7-0 stored in CRTC register 18H (the last one), bit 8 stored in bit 4 of CRTC register 7
- * and bit 9 stored in bit 6 of CRTC register 9, 18 pixels, 200 - 18 = 182 * 2 = 364, and it's 
- * indexed, so 363 in hex is 0x16B
+
+/* 200 - 18 (size of the text + pixel above and below) = 182 * 2 = 364. It's in 
+ * in index (starting at 0) so 363. And 363 in hex is 0x16B
+ * put 6B into line compare register (18h). Put 1 in overflow register's bit 4,
+ * and put 0 in maximum scan line register's bit 6. 
  */
 static unsigned short mode_X_CRTC[NUM_CRTC_REGS] = {
     0x5F00, 0x4F01, 0x5002, 0x8203, 0x5404, 0x8005, 0xBF06, 0x1F07,
-    0x0008 , 0x0109, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x000F,
+    0x0008, 0x0109, 0x000A, 0x000B, 0x000C, 0x000D, 0x000E, 0x000F,
     0x9C10, 0x8E11, 0x8F12, 0x2813, 0x0014, 0x9615, 0xB916, 0xE317,
     0x6B18
 };
@@ -110,6 +112,7 @@ static unsigned short mode_X_graphics[NUM_GRAPHICS_REGS] = {
 static unsigned short text_seq[NUM_SEQUENCER_REGS] = {
     0x0100, 0x2001, 0x0302, 0x0003, 0x0204
 };
+
 static unsigned short text_CRTC[NUM_CRTC_REGS] = {
     0x5F00, 0x4F01, 0x5002, 0x8203, 0x5504, 0x8105, 0xBF06, 0x1F07,
     0x0008, 0x4F09, 0x0D0A, 0x0E0B, 0x000C, 0x000D, 0x000E, 0x000F,
@@ -304,7 +307,7 @@ int set_mode_X(void (*horiz_fill_fn)(int, int, unsigned char[SCROLL_X_DIM]),
     }
 
     /* One display page goes at the start of video memory. */
-    target_img = 0x4000;
+    target_img = 0x5A0;
 
     /* Map video memory and obtain permission for VGA port access. */
     if (open_memory_and_ports() == -1)
@@ -494,15 +497,17 @@ void show_screen() {
     unsigned char* addr;    /* source address for copy             */
     int p_off;              /* plane offset of first display plane */
     int i;                  /* loop index over video planes        */
-
+    //int j;
+    //unsigned int j;
     /*
      * Calculate offset of build buffer plane to be mapped into plane 0
      * of display.
      */
     p_off = (3 - (show_x & 3));
 
+
     /* Switch to the other target screen in video memory. */
-    if(target_img == 0x6000) target_img = 0xB000;
+    if(target_img == 0x6000) target_img = 0xC000;
     else target_img = 0x6000;
 
     /* Calculate the source address. */
@@ -514,12 +519,88 @@ void show_screen() {
         copy_image(addr + ((p_off - i + 4) & 3) * SCROLL_SIZE + (p_off < i), target_img);
     }
 
+    
+
     /*
      * Change the VGA registers to point the top left of the screen
      * to the video memory that we just filled.
      */
     OUTW(0x03D4, (target_img & 0xFF00) | 0x0C);
     OUTW(0x03D4, ((target_img & 0x00FF) << 8) | 0x0D);
+}
+
+/*
+ * show_statusbar()
+ *   DESCRIPTION: Show the status bar on the display
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: 
+ */
+void show_statusbar(char * str) {
+    unsigned char* addr;    /* source address for copy             */
+    int p_off;              /* plane offset of first display plane */
+    int i;                  /* loop index over video planes        */
+    // int j;
+    /*
+     * Calculate offset of build buffer plane to be mapped into plane 0
+     * of display.
+     */
+    p_off = 3;
+
+
+    // for(j = 0; j < 320 * 18; j++) {
+    //     mem_image[j] = 0x3;
+    // }
+    
+
+    unsigned char buffer[320 * 18];
+    /* Calculate the source address. */
+    addr = text_to_graphics(str, buffer);
+
+    /* Draw to each plane in the video memory. */
+    for (i = 0; i < 4; i++) { 
+        SET_WRITE_MASK(1 << (i + 8));
+        // the size of the scroll bar is 320 * 18 and for each plane would be 1440
+        copy_statusbar(addr + ((p_off - i + 4) & 3) * 1440 + (p_off < i), 0);
+
+    }
+
+    
+
+    /*
+     * Change the VGA registers to point the top left of the screen
+     * to the video memory that we just filled.
+     */
+    OUTW(0x03D4, (target_img & 0xFF00) | 0x0C);
+    OUTW(0x03D4, ((target_img & 0x00FF) << 8) | 0x0D);
+}
+
+/*
+ * copy_statusbar
+ *   DESCRIPTION: Copy one plane of a screen from the build buffer to the
+ *                video memory.
+ *   INPUTS: img -- a pointer to a single screen plane in the build buffer
+ *           scr_addr -- the destination offset in video memory
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: copies a plane from the build buffer to video memory
+ */
+void copy_statusbar(unsigned char* img, unsigned short scr_addr) {
+    /*
+     * memcpy is actually probably good enough here, and is usually
+     * implemented using ISA-specific features like those below,
+     * but the code here provides an example of x86 string moves
+     */
+    asm volatile ("                                             \n\
+        cld                                                     \n\
+        movl $1440,%%ecx                                       \n\
+        rep movsb    /* copy ECX bytes from M[ESI] to M[EDI] */ \n\
+        "
+        : /* no outputs */
+        : "S"(img), "D"(mem_image + scr_addr)
+        : "eax", "ecx", "memory"
+    );
 }
 
 /*
@@ -604,6 +685,14 @@ void draw_full_block(int pos_x, int pos_y, unsigned char* blk) {
     }
 }
 
+/* draw_full_block
+ * get_player_mask
+ * get_player_block
+ */
+ void idkmasking() {
+     
+ }
+
 /*
  * The functions inside the preprocessor block below rely on functions
  * in maze.c to generate graphical images of the maze.  These functions
@@ -622,10 +711,13 @@ void draw_full_block(int pos_x, int pos_y, unsigned char* blk) {
  *                of pixels from the leftmost pixel to the line to be
  *                drawn)
  *   OUTPUTS: none
-                  SCROLL range, the function returns -1.
+ *   RETURN VALUE: Returns 0 on success.  If x is outside of the valid
+ *                 SCROLL range, the function returns -1.
  *   SIDE EFFECTS: draws into the build buffer
  */
 int draw_vert_line(int x) {
+    /* to be written... */
+
     unsigned char buf[SCROLL_Y_DIM];    /* buffer for graphical image of line */
     unsigned char* addr;                /* address of first pixel in build    */
                                         /*     buffer (without plane offset)  */
@@ -656,6 +748,7 @@ int draw_vert_line(int x) {
 
     /* Return success. */
     return 0;
+
 }
 
 /*
@@ -707,7 +800,7 @@ int draw_horiz_line(int y) {
     return 0;
 }
 
-#endif /* !defined(TEXT_RESTORE_PROGRAM
+#endif /* !defined(TEXT_RESTORE_PROGRAM) */
 
 /*
  * open_memory_and_ports
@@ -995,7 +1088,7 @@ static void copy_image(unsigned char* img, unsigned short scr_addr) {
      */
     asm volatile ("                                             \n\
         cld                                                     \n\
-        movl $16000,%%ecx                                       \n\
+        movl $14560,%%ecx                                       \n\
         rep movsb    /* copy ECX bytes from M[ESI] to M[EDI] */ \n\
         "
         : /* no outputs */
@@ -1003,6 +1096,7 @@ static void copy_image(unsigned char* img, unsigned short scr_addr) {
         : "eax", "ecx", "memory"
     );
 }
+
 
 #ifdef TEXT_RESTORE_PROGRAM
 

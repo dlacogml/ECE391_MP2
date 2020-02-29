@@ -51,7 +51,7 @@
 #define TEST_MAZE_GEN 0
 
 /* Set to 1 to remove all walls as a debugging aid. (Nate Taylor, S07). */
-#define GOD_MODE 0
+#define GOD_MODE 1
 
 /* local functions--see function headers for details */
 static int mark_maze_area(int x, int y);
@@ -720,6 +720,73 @@ int add_a_fruit() {
 
     /* Return the current number of fruits in the maze. */
     return n_fruits;
+}
+
+extern char * turnToString(int level, int fruits, int min, int sec) {
+    //
+    char str[50];
+
+    if(fruits == 1) {
+        if(sec < 10) {
+            if(min < 10) {
+                snprintf(str, 41, "      Level: %d    %d Fruit    0%d:0%d      ", level, fruits , min, sec);
+            } else {
+                snprintf(str, 41, "      Level: %d    %d Fruit    %d:0%d      ", level, fruits , min, sec);
+            }
+        } else {
+            if(min < 10) {
+                snprintf(str, 41, "      Level: %d    %d Fruit    0%d:%d      ", level, fruits , min, sec);
+            } else {
+                snprintf(str, 41, "      Level: %d    %d Fruit    %d:%d      ", level, fruits , min, sec);
+            }
+        }
+    } else if(fruits < 10) {
+            if(sec < 10) {
+                if(min < 10) {
+                        snprintf(str, 41, "      Level: %d    %d Fruits   0%d:0%d      ", level, fruits , min, sec);
+                } else {
+                        snprintf(str, 41, "      Level: %d    %d Fruits   %d:0%d      ", level, fruits , min, sec);
+                }
+            } else {
+                if(min < 10) {
+                        snprintf(str, 41, "      Level: %d    %d Fruits   0%d:%d      ", level, fruits , min, sec);
+                } else {
+                        snprintf(str, 41, "      Level: %d    %d Fruits   %d:%d      ", level, fruits , min, sec);
+                }
+           }
+    }
+    else {
+        if(sec < 10) {
+                if(min < 10) {
+                    if(level > 9) {
+                        snprintf(str, 41, "      Level: %d  %d Fruits  0%d:0%d      ", level, fruits , min, sec);
+                    } else {
+                        snprintf(str, 41, "      Level: %d   %d Fruits  0%d:0%d      ", level, fruits , min, sec);
+                    }
+                } else {
+                    if(level > 9) {
+                        snprintf(str, 41, "      Level: %d  %d Fruits  %d:0%d      ", level, fruits , min, sec);
+                    } else {
+                        snprintf(str, 41, "      Level: %d   %d Fruits  %d:0%d      ", level, fruits , min, sec);
+                    }
+                }
+            } else {
+                if(min < 10) {
+                    if(level > 9) {
+                        snprintf(str, 41, "      Level: %d  %d Fruits   0%d:%d      ", level, fruits , min, sec);
+                    } else {
+                        snprintf(str, 41, "      Level: %d   %d Fruits   0%d:%d      ", level, fruits , min, sec);
+                    }
+                } else {
+                    if(level > 9) {
+                        snprintf(str, 41, "      Level: %d  %d Fruits   %d:%d      ", level, fruits , min, sec);
+                    } else {
+                        snprintf(str, 41, "      Level: %d   %d Fruits   %d:%d      ", level, fruits , min, sec);
+                    }
+                }
+            }
+    }
+    return str;
 }
 
 /* 

@@ -86,7 +86,7 @@ typedef struct {
     int time_to_first_fruit;     /* 300 to 120, in steps of -30      */
     int time_between_fruits;     /* 300 to 60, in steps of -30       */
     int tick_usec;         /* 20000 to 5000, in steps of -1750 */
-    
+    int fruits_collected;
     /* dynamic values within a level -- you may want to add more... */
     unsigned int map_x, map_y;   /* current upper left display pixel */
 } game_info_t;
@@ -269,7 +269,10 @@ static int unveil_around_player(int play_x, int play_y) {
     int i, j;            /* loop indices for unveiling maze squares */
 
     /* Check for fruit at the player's position. */
-    (void)check_for_fruit (x, y);
+    if(check_for_fruit (x, y)) {
+        game_info.fruits_collected++;
+    }
+    
 
     /* Unveil spaces around the player. */
     for (i = -1; i < 2; i++)
@@ -421,7 +424,14 @@ static void *rtc_thread(void *arg) {
         (void)unveil_around_player(play_x, play_y);
 
         draw_full_block(play_x, play_y, get_player_block(last_dir));
+        
+        time_t start;
+
+        time(&start);
+
         show_screen();
+        char * str = turnToString(level, game_info.fruits_collected, 0, 0);
+        show_statusbar(str);
 
         // get first Periodic Interrupt
         ret = read(fd, &data, sizeof(unsigned long));
@@ -527,9 +537,15 @@ static void *rtc_thread(void *arg) {
                 }
             }
             if (need_redraw)
-                show_screen();    
-            need_redraw = 0;
-        }    
+                show_screen();
+                  
+            need_redraw = 0;  
+            time_t end;
+            time(&end);
+            int diff = difftime(end, start);
+            char * str = turnToString(level, game_info.fruits_collected, diff / 60, diff % 60);
+            show_statusbar(str); 
+        }  
     }
     if (quit_flag == 0)
         winner = 1;
@@ -549,6 +565,7 @@ int main() {
     int ret;
     struct termios tio_new;
     unsigned long update_rate = 32; /* in Hz */
+    game_info.fruits_collected = 0;
 
     pthread_t tid1;
     pthread_t tid2;

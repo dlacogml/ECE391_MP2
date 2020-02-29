@@ -35,15 +35,56 @@
  */
 
 #include <string.h>
-
+#include <stdio.h>
+#include <stdlib.h>
 #include "text.h"
+
+/*
+ * text to graphics? 
+ * width of the screen is 320 pixels; each character is 8x16 pixels
+ * height of the buffer = the height of the text? the status bar? 
+ */
+unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
+    // figure out how to center the text?
+    int curr;
+    int i;
+    int j;
+    unsigned int index;
+
+    // loop through the number of rows which is 18 (16 for the text + 2 pixels for top and bottom)
+
+    for(j = 0; j < strlen(str); j++) {
+        for(i = 0; i < 18; i++) {
+        // loop through the number of columns which is 8
+            if(i == 0 || i == 17) {
+                // fill with background colors
+                for(curr = 0; curr < 8; curr++) {
+                    index = (((18 * 320) / 4) * (3 - (curr) % 4)) + (320 * i + curr) / 4 + (j * 2);
+                    buffer[index] = 0x3;
+                }
+            }
+
+            unsigned char char_data = font_data[(int) str[j]][i - 1];
+            for(curr = 0; curr < 8; curr++) {
+                index = (((18 * 320) / 4) * (3 - (curr) % 4)) + (320 * i + curr) / 4 + (j * 2);
+                if((char_data & 0x80 >> curr) == 0x0) {
+                    buffer[index] = 0x3;
+                } else {
+                    buffer[index] = 0x0;
+                }
+            }
+        }
+    }
+
+    return buffer;
+}
 
 /* 
  * These font data were read out of video memory during text mode and
  * saved here.  They could be read in the same manner at the start of a
  * game, but keeping a copy allows us to run the game to fix text mode
  * if it is broken (font data missing, usually).
- *
+ * 
  * Each character is 8x16 pixels and occupies two lines in the table below.
  * Each byte represents a single bitmapped line of a single character.
  */
