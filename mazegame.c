@@ -545,7 +545,8 @@ static void *rtc_thread(void *arg) {
                     }  
 
                     need_redraw = 1;
-                } else {
+                } else {            // the player is not moving because they've encountered a wall
+                    // check if the fruit is there, and if it is, redraw so the fruit is collected
                     if(check_for_fruit(play_x, play_y)) {
                         need_redraw = 1;
                     }
