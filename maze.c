@@ -722,71 +722,68 @@ int add_a_fruit() {
     return n_fruits;
 }
 
-extern char * turnToString(int level, int fruits, int min, int sec) {
-    //
-    char str[50];
 
-    if(fruits == 1) {
+/* 
+ * turnToString
+ *   DESCRIPTION: turns the level number, the minute, and the second and puts them all into a string to be
+ *                  put on the status bar
+ *   INPUTS: level - the level number the player is at
+ *           min - minutes passed since the game has passed
+ *           sec - seconds passed since the game has passed
+ *           str - the array of char that is the string that the function puts everything together
+ *   OUTPUTS: str
+ *   RETURN VALUE: 
+ *   SIDE EFFECTS: changes str to the string to be put on the status bar
+ */
+extern void turnToString(int level, int min, int sec, char * str) {
+    // check if the number of fruits in the game is 1 so that it says "Fruit" instead of "Fruits"
+    if(n_fruits == 1) {
         if(sec < 10) {
             if(min < 10) {
-                snprintf(str, 41, "      Level: %d    %d Fruit    0%d:0%d      ", level, fruits , min, sec);
+                snprintf(str, 41, "     Level:  %d    %d Fruit    0%d:0%d      ", level, n_fruits , min, sec);
             } else {
-                snprintf(str, 41, "      Level: %d    %d Fruit    %d:0%d      ", level, fruits , min, sec);
+                snprintf(str, 41, "     Level:  %d    %d Fruit    %d:0%d      ", level, n_fruits , min, sec);
             }
         } else {
             if(min < 10) {
-                snprintf(str, 41, "      Level: %d    %d Fruit    0%d:%d      ", level, fruits , min, sec);
+                snprintf(str, 41, "     Level:  %d    %d Fruit    0%d:%d      ", level, n_fruits , min, sec);
             } else {
-                snprintf(str, 41, "      Level: %d    %d Fruit    %d:%d      ", level, fruits , min, sec);
+                snprintf(str, 41, "     Level:  %d    %d Fruit    %d:%d      ", level, n_fruits , min, sec);
             }
         }
-    } else if(fruits < 10) {
-            if(sec < 10) {
-                if(min < 10) {
-                        snprintf(str, 41, "      Level: %d    %d Fruits   0%d:0%d      ", level, fruits , min, sec);
-                } else {
-                        snprintf(str, 41, "      Level: %d    %d Fruits   %d:0%d      ", level, fruits , min, sec);
-                }
-            } else {
-                if(min < 10) {
-                        snprintf(str, 41, "      Level: %d    %d Fruits   0%d:%d      ", level, fruits , min, sec);
-                } else {
-                        snprintf(str, 41, "      Level: %d    %d Fruits   %d:%d      ", level, fruits , min, sec);
-                }
-           }
-    }
+    } 
     else {
         if(sec < 10) {
-                if(min < 10) {
-                    if(level > 9) {
-                        snprintf(str, 41, "      Level: %d  %d Fruits  0%d:0%d      ", level, fruits , min, sec);
-                    } else {
-                        snprintf(str, 41, "      Level: %d   %d Fruits  0%d:0%d      ", level, fruits , min, sec);
-                    }
+            if(min < 10) {
+                if(level > 9) {
+                    snprintf(str, 41, "     Level: %2d  %2d Fruits   0%d:0%d      ", level, n_fruits , min, sec);
                 } else {
-                    if(level > 9) {
-                        snprintf(str, 41, "      Level: %d  %d Fruits  %d:0%d      ", level, fruits , min, sec);
-                    } else {
-                        snprintf(str, 41, "      Level: %d   %d Fruits  %d:0%d      ", level, fruits , min, sec);
-                    }
+                    snprintf(str, 41, "     Level: %2d   %2d Fruits   0%d:0%d      ", level, n_fruits , min, sec);
                 }
             } else {
-                if(min < 10) {
-                    if(level > 9) {
-                        snprintf(str, 41, "      Level: %d  %d Fruits   0%d:%d      ", level, fruits , min, sec);
-                    } else {
-                        snprintf(str, 41, "      Level: %d   %d Fruits   0%d:%d      ", level, fruits , min, sec);
-                    }
+                if(level > 9) {
+                    snprintf(str, 41, "     Level: %2d  %2d Fruits   %d:0%d      ", level, n_fruits , min, sec);
                 } else {
-                    if(level > 9) {
-                        snprintf(str, 41, "      Level: %d  %d Fruits   %d:%d      ", level, fruits , min, sec);
-                    } else {
-                        snprintf(str, 41, "      Level: %d   %d Fruits   %d:%d      ", level, fruits , min, sec);
-                    }
+                    snprintf(str, 41, "     Level: %2d   %2d Fruits   %d:0%d      ", level, n_fruits , min, sec);
                 }
             }
+        } else {
+            if(min < 10) {
+                if(level > 9) {
+                    snprintf(str, 41, "     Level: %2d  %2d Fruits   0%d:%d      ", level, n_fruits , min, sec);
+                } else {
+                    snprintf(str, 41, "     Level: %2d   %2d Fruits   0%d:%d      ", level, n_fruits , min, sec);
+                }
+            } else {
+                if(level > 9) {
+                    snprintf(str, 41, "     Level: %2d  %2d Fruits   %d:%d      ", level, n_fruits , min, sec);
+                } else {
+                    snprintf(str, 41, "     Level: %2d   %2d Fruits   %d:%d      ", level, n_fruits , min, sec);
+                }
+            }
+        }
     }
-    return str;
+
 }
 
 /* 

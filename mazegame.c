@@ -423,14 +423,21 @@ static void *rtc_thread(void *arg) {
         // Show maze around the player's original position
         (void)unveil_around_player(play_x, play_y);
 
-        draw_full_block(play_x, play_y, get_player_block(last_dir));
+        // buffer to store the background
+        unsigned char maze_buffer[BLOCK_X_DIM * BLOCK_Y_DIM];
+
+        store_background(play_x, play_y, maze_buffer);
+        draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));
         
+        show_screen();
+
+        draw_full_block(play_x, play_y, maze_buffer);
+
         time_t start;
 
         time(&start);
-
-        show_screen();
-        char * str = turnToString(level, game_info.fruits_collected, 0, 0);
+        char str[50];
+        turnToString(level, 0, 0, str);
         show_statusbar(str);
 
         // get first Periodic Interrupt
@@ -532,18 +539,22 @@ static void *rtc_thread(void *arg) {
                             move_left(&play_x);  
                             break;
                     }
-                    draw_full_block(play_x, play_y, get_player_block(last_dir));    
+                    store_background(play_x, play_y, maze_buffer);
+                    draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));    
+
                     need_redraw = 1;
                 }
             }
-            if (need_redraw)
+            if (need_redraw) {
                 show_screen();
+                draw_full_block(play_x, play_y, maze_buffer);
+            }
                   
             need_redraw = 0;  
             time_t end;
             time(&end);
             int diff = difftime(end, start);
-            char * str = turnToString(level, game_info.fruits_collected, diff / 60, diff % 60);
+            turnToString(level, diff / 60, diff % 60, str);
             show_statusbar(str); 
         }  
     }

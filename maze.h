@@ -87,7 +87,8 @@ extern int check_for_win(int x, int y);
 /* add a new fruit randomly in the maze */
 extern int add_a_fruit();
 
-extern char * turnToString(int level, int fruits, int min, int sec);
+/* change the level number, minutes passed, seconds passed, and the number of fruits left in the game into a string */
+extern void turnToString(int level, int min, int sec, char * str);
 
 /* get pointer to the player's block image; depends on direction of motion */
 extern unsigned char* get_player_block(dir_t cur_dir);
