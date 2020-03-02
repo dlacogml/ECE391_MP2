@@ -40,6 +40,8 @@
 /* The default VGA text mode font is 8x16 pixels. */
 #define FONT_WIDTH   8
 #define FONT_HEIGHT  16
+#define STATUS_HEIGHT (FONT_HEIGHT + 2) /* FONT_HEIGHT plus pixel above the text and pixel below the text */
+#define IMAGE_X_DIM     320   /* pixels; must be divisible by 4             */
 
 /*
  * text to graphics? 
