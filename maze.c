@@ -740,46 +740,30 @@ extern void turnToString(int level, int min, int sec, char * str) {
     if(n_fruits == 1) {
         if(sec < 10) {
             if(min < 10) {
-                snprintf(str, 41, "     Level:  %d    %d Fruit    0%d:0%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level: 2%d   %2d Fruit    0%d:0%d      ", level, n_fruits , min, sec);
             } else {
-                snprintf(str, 41, "     Level:  %d    %d Fruit    %d:0%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level: 2%d   %2d Fruit    %d:0%d      ", level, n_fruits , min, sec);
             }
         } else {
             if(min < 10) {
-                snprintf(str, 41, "     Level:  %d    %d Fruit    0%d:%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level: 2%d   %2d Fruit    0%d:%d      ", level, n_fruits , min, sec);
             } else {
-                snprintf(str, 41, "     Level:  %d    %d Fruit    %d:%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level: 2%d   %2d Fruit    %d:%d      ", level, n_fruits , min, sec);
             }
         }
     } 
     else {
         if(sec < 10) {
             if(min < 10) {
-                if(level > 9) {
-                    snprintf(str, 41, "     Level: %2d  %2d Fruits   0%d:0%d      ", level, n_fruits , min, sec);
-                } else {
-                    snprintf(str, 41, "     Level: %2d   %2d Fruits   0%d:0%d      ", level, n_fruits , min, sec);
-                }
+                snprintf(str, 41, "     Level: %2d   %2d Fruits   0%d:0%d      ", level, n_fruits , min, sec);
             } else {
-                if(level > 9) {
-                    snprintf(str, 41, "     Level: %2d  %2d Fruits   %d:0%d      ", level, n_fruits , min, sec);
-                } else {
-                    snprintf(str, 41, "     Level: %2d   %2d Fruits   %d:0%d      ", level, n_fruits , min, sec);
-                }
+                snprintf(str, 41, "     Level: %2d   %2d Fruits   %d:0%d      ", level, n_fruits , min, sec);
             }
         } else {
             if(min < 10) {
-                if(level > 9) {
-                    snprintf(str, 41, "     Level: %2d  %2d Fruits   0%d:%d      ", level, n_fruits , min, sec);
-                } else {
-                    snprintf(str, 41, "     Level: %2d   %2d Fruits   0%d:%d      ", level, n_fruits , min, sec);
-                }
+                snprintf(str, 41, "     Level: %2d   %2d Fruits   0%d:%d      ", level, n_fruits , min, sec);
             } else {
-                if(level > 9) {
-                    snprintf(str, 41, "     Level: %2d  %2d Fruits   %d:%d      ", level, n_fruits , min, sec);
-                } else {
-                    snprintf(str, 41, "     Level: %2d   %2d Fruits   %d:%d      ", level, n_fruits , min, sec);
-                }
+                snprintf(str, 41, "     Level: %2d   %2d Fruits   %d:%d      ", level, n_fruits , min, sec);
             }
         }
     }

@@ -541,15 +541,14 @@ void show_statusbar(char * str) {
     unsigned char* addr;    /* source address for copy             */
     int p_off;              /* plane offset of first display plane */
     int i;                  /* loop index over video planes        */
-    // int j;
     /*
      * Calculate offset of build buffer plane to be mapped into plane 0
      * of display.
      */
     p_off = 3;
     
-
-    unsigned char buffer[320 * 18];
+    // create buffer with the dimensions of the status bar (320 x 18)
+    unsigned char buffer[IMAGE_X_DIM * STATUS_Y_DIM];
     /* Calculate the source address. */
     addr = text_to_graphics(str, buffer);
 
@@ -557,7 +556,7 @@ void show_statusbar(char * str) {
     for (i = 0; i < 4; i++) { 
         SET_WRITE_MASK(1 << (i + 8));
         // the size of the scroll bar is 320 * 18 and for each plane would be 1440
-        copy_statusbar(addr + ((p_off - i + 4) & 3) * 1440 + (p_off < i), 0);
+        copy_statusbar(addr + ((p_off - i + 4) & 3) * (IMAGE_X_DIM * STATUS_Y_DIM) + (p_off < i), 0);
 
     }    
 

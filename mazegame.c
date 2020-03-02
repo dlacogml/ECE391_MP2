@@ -545,17 +545,24 @@ static void *rtc_thread(void *arg) {
                     }  
 
                     need_redraw = 1;
+                } else {            // the player is not moving because they've encountered a wall
+                    // check if the fruit is there, and if it is, redraw so the fruit is collected
+                    if(check_for_fruit(play_x, play_y)) {
+                        need_redraw = 1;
+                    }
                 }
             }
             
-            // save the background
-            store_background(play_x, play_y, maze_buffer);
-            // draw the character on the new position
-            draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));  
+            if(need_redraw) {
+                // save the background
+                store_background(play_x, play_y, maze_buffer);
+                // draw the character on the new position
+                draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));  
                 
-            show_screen();
-            // draw the background back
-            draw_full_block(play_x, play_y, maze_buffer);
+                show_screen();
+                // draw the background back
+                draw_full_block(play_x, play_y, maze_buffer);
+            }
                   
             need_redraw = 0; 
 

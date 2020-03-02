@@ -54,7 +54,7 @@
 #define SCROLL_X_DIM    IMAGE_X_DIM                /* full image width      */
 #define SCROLL_Y_DIM    (IMAGE_Y_DIM - 18)                /* full image width      */
 #define SCROLL_X_WIDTH  (IMAGE_X_DIM / 4)          /* addresses (bytes)     */
-
+#define STATUS_Y_DIM    (FONT_HEIGHT + 2)          /* font height + 2 pixels, one for above and one for bottom */
 /*
  * NOTES
  *
