@@ -552,7 +552,7 @@ static void *rtc_thread(void *arg) {
                 }
             }
             
-            if(need_redraw) {
+            //if(need_redraw) {
                 
                 // save the background
                 store_background(play_x, play_y, maze_buffer);
@@ -562,7 +562,7 @@ static void *rtc_thread(void *arg) {
                 show_screen();
                 // draw the background back
                 draw_full_block(play_x, play_y, maze_buffer);
-            }
+            //}
 
             // // save the background
             // store_background(play_x, play_y, maze_buffer);
