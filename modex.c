@@ -70,6 +70,8 @@
 #define SCREEN_SIZE             (SCROLL_SIZE * 4 + 1)
 #define BUILD_BUF_SIZE          (SCREEN_SIZE + 20000)
 #define BUILD_BASE_INIT         ((BUILD_BUF_SIZE - SCREEN_SIZE) / 2)
+#define FONT_HEIGHT             16              
+#define STATUS_BAR_SIZE         ((FONT_HEIGHT + 2) * IMAGE_X_DIM)           /*font height + 1 pixel above and 1 pixel belo times the width of the screen*/
 
 /* Mode X and general VGA parameters */
 #define VID_MEM_SIZE            131072
@@ -548,8 +550,8 @@ void show_statusbar(char * str) {
      */
     p_off = 3;
     
-
-    unsigned char buffer[320 * 18];
+    // buffer the size of the status bar
+    unsigned char buffer[STATUS_BAR_SIZE];
     /* Calculate the source address. */
     addr = text_to_graphics(str, buffer);
 

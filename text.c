@@ -39,6 +39,9 @@
 #include <stdlib.h>
 #include "text.h"
 
+#define STATUS_BAR_HEIGHT       (FONT_HEIGHT + 2)       /* height of the font plus 1 pixel above and 1 pixel below*/
+#define IMAGE_X_DIM             320
+
 /*
  * text_to_graphics
  *   DESCRIPTION: Given a string, produce a buffer that holds a graphical image of the ASCII characters in the string 
@@ -58,12 +61,13 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
     // loop for each character in the string
     for(j = 0; j < strlen(str); j++) {
         // loop through the number of rows which is 18 (16 for the text + 2 pixels for top and bottom)
-        for(i = 0; i < 18; i++) {
+        for(i = 0; i < STATUS_BAR_HEIGHT; i++) {
         // loop through the number of columns which is 8
             if(i == 0 || i == 17) {
                 // fill with background colors
                 for(curr = 0; curr < 8; curr++) {
-                    index = (((18 * 320) / 4) * (3 - (curr) % 4)) + (320 * i + curr) / 4 + (j * 2);
+                    // there are four planes going from 3 --> 2 --> 1 --> 0
+                    index = (((STATUS_BAR_HEIGHT * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
                     buffer[index] = 0x3;
                 }
             }
@@ -73,7 +77,7 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
             for(curr = 0; curr < 8; curr++) {
                 // calculate the index of the buffer accounting for the plane number
                 // 18 is the height of the status bar, 320 is the width of the status bar and 4 is the number of planes
-                index = (((18 * 320) / 4) * (3 - (curr) % 4)) + (320 * i + curr) / 4 + (j * 2);
+                index = (((STATUS_BAR_HEIGHT * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
                 // check if it is a background (0) or a text (1)
                 if((char_data & 0x80 >> curr) == 0x0) {
                     buffer[index] = 0x3;
