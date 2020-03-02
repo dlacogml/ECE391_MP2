@@ -57,15 +57,6 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
 
     // loop for each character in the string
     for(j = 0; j < strlen(str); j++) {
-<<<<<<< HEAD
-        // loop through the number of rows which is 18 (16 for the text + 2 pixels for top and bottom)
-        for(i = 0; i < STATUS_HEIGHT; i++) {
-        // loop through the number of columns which is 8
-            if(i == 0 || i == 17) {
-                // fill with background colors
-                for(curr = 0; curr < 8; curr++) {
-                    index = (((STATUS_HEIGHT * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
-=======
         // loop through the FONT_HEIGHT + 2 pixels for top and bottom)
         for(i = 0; i < FONT_HEIGHT + 2; i++) {
             // top and bottom pixel should be filled with background colors
@@ -73,7 +64,6 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
                 // fill with background colors
                 for(curr = 0; curr < 8; curr++) {
                     index = ((STATUS_Y_DIM * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
->>>>>>> 83cd6c391e4186b8ffb699f478e5ef9f2fa90740
                     buffer[index] = 0x3;
                 }
             }
@@ -84,13 +74,8 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
             // each ascii character has 8 columns of bits
             for(curr = 0; curr < 8; curr++) {
                 // calculate the index of the buffer accounting for the plane number
-<<<<<<< HEAD
-                // 18 is the height of the status bar, 320 is the width of the status bar and 4 is the number of planes
-                index = (((STATUS_HEIGHT * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
-=======
                 // 18 is the height of the status bar, 320 is the width of the status bar and 4 is the number of planes (3, 2, 1, 0)
                 index = (((STATUS_Y_DIM * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
->>>>>>> 83cd6c391e4186b8ffb699f478e5ef9f2fa90740
                 // check if it is a background (0) or a text (1)
                 if((char_data & 0x80 >> curr) == 0x0) {
                     buffer[index] = 0x3;        // 0x3 is teal
