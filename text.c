@@ -76,9 +76,9 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
                 index = (((18 * 320) / 4) * (3 - (curr) % 4)) + (320 * i + curr) / 4 + (j * 2);
                 // check if it is a background (0) or a text (1)
                 if((char_data & 0x80 >> curr) == 0x0) {
-                    buffer[index] = 0x3;
+                    buffer[index] = 0x3;        // 0x3 is teal
                 } else {
-                    buffer[index] = 0x0;
+                    buffer[index] = 0x0;        // 0x0 is black
                 }
             }
         }
