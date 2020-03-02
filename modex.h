@@ -120,6 +120,7 @@ extern void set_view_window(int scr_x, int scr_y);
 /* show the logical view window on the monitor */
 extern void show_screen();
 
+/* display the status bar on the monitor */
 extern void show_statusbar(char * str);
 
 /* clear the video memory in mode X */
@@ -132,7 +133,16 @@ extern void clear_screens();
  */
 extern void draw_full_block(int pos_x, int pos_y, unsigned char* blk);
 
+/*
+ * draw a 12x12 block with upper left corner at logical position
+ * (pos_x,pos_y); any part of the block outside of the mask
+ * is clipped (cut off and not drawn)
+ */
 extern void draw_player_block(int pos_x, int pox_y, unsigned char * blk, unsigned char * mask);
+
+/*
+ * saves the background into the buffer
+ */
 extern void store_background(int pos_x, int pox_y, unsigned char * buffer);
 
 /* draw a horizontal line at vertical pixel y within the logical view window */
@@ -141,6 +151,7 @@ extern int draw_horiz_line(int y);
 /* draw a vertical line at horizontal pixel x within the logical view window */
 extern int draw_vert_line(int x);
 
+/*copy the status bar*/
 void copy_statusbar(unsigned char* img, unsigned short scr_addr);
 
 #endif /* MODEX_H */

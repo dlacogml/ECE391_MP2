@@ -631,12 +631,12 @@ int check_for_fruit(int x, int y) {
         /* ...remove it. */
         maze[MAZE_INDEX(x, y)] &= ~MAZE_FRUIT;
 
-    /* Update the count of fruits. */
-    --n_fruits;
+        /* Update the count of fruits. */
+        --n_fruits;
 
-    /* The exit may appear. */
-    if (n_fruits == 0)
-        draw_full_block (exit_x * BLOCK_X_DIM, exit_y * BLOCK_Y_DIM, find_block(exit_x, exit_y));
+        /* The exit may appear. */
+        if (n_fruits == 0)
+            draw_full_block (exit_x * BLOCK_X_DIM, exit_y * BLOCK_Y_DIM, find_block(exit_x, exit_y));
 
         /* Redraw the space with no fruit. */
         draw_full_block (x * BLOCK_X_DIM, y * BLOCK_Y_DIM, find_block(x, y));

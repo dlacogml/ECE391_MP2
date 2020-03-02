@@ -40,20 +40,24 @@
 #include "text.h"
 
 /*
- * text to graphics? 
- * width of the screen is 320 pixels; each character is 8x16 pixels
- * height of the buffer = the height of the text? the status bar? 
+ * text_to_graphics
+ *   DESCRIPTION: Given a string, produce a buffer that holds a graphical image of the ASCII characters in the string 
+ *   INPUTS: str - the string to be put into the buffer
+ *           buffer - buffer that has the graphical image of the ASCII characters
+ *   OUTPUTS: the string input
+ *   RETURN VALUE: the buffer unsigned char*
+ *   SIDE EFFECTS: changes the buffer
  */
 unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
-    // figure out how to center the text?
+    // initialize variables
     int curr;
     int i;
     int j;
     unsigned int index;
 
-    // loop through the number of rows which is 18 (16 for the text + 2 pixels for top and bottom)
-
+    // loop for each character in the string
     for(j = 0; j < strlen(str); j++) {
+        // loop through the number of rows which is 18 (16 for the text + 2 pixels for top and bottom)
         for(i = 0; i < 18; i++) {
         // loop through the number of columns which is 8
             if(i == 0 || i == 17) {
@@ -63,10 +67,14 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
                     buffer[index] = 0x3;
                 }
             }
-
+            // get the ascii character from font_data
             unsigned char char_data = font_data[(int) str[j]][i - 1];
+            // each ascii character has 8 columns
             for(curr = 0; curr < 8; curr++) {
+                // calculate the index of the buffer accounting for the plane number
+                // 18 is the height of the status bar, 320 is the width of the status bar and 4 is the number of planes
                 index = (((18 * 320) / 4) * (3 - (curr) % 4)) + (320 * i + curr) / 4 + (j * 2);
+                // check if it is a background (0) or a text (1)
                 if((char_data & 0x80 >> curr) == 0x0) {
                     buffer[index] = 0x3;
                 } else {

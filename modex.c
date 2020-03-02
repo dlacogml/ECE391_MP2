@@ -532,8 +532,8 @@ void show_screen() {
 /*
  * show_statusbar()
  *   DESCRIPTION: Show the status bar on the display
- *   INPUTS: none
- *   OUTPUTS: none
+ *   INPUTS: str - the string that should be showed on the status bar
+ *   OUTPUTS: the status bar
  *   RETURN VALUE: none
  *   SIDE EFFECTS: 
  */
@@ -547,11 +547,6 @@ void show_statusbar(char * str) {
      * of display.
      */
     p_off = 3;
-
-
-    // for(j = 0; j < 320 * 18; j++) {
-    //     mem_image[j] = 0x3;
-    // }
     
 
     unsigned char buffer[320 * 18];
@@ -564,9 +559,7 @@ void show_statusbar(char * str) {
         // the size of the scroll bar is 320 * 18 and for each plane would be 1440
         copy_statusbar(addr + ((p_off - i + 4) & 3) * 1440 + (p_off < i), 0);
 
-    }
-
-    
+    }    
 
     /*
      * Change the VGA registers to point the top left of the screen
@@ -576,32 +569,6 @@ void show_statusbar(char * str) {
     OUTW(0x03D4, ((target_img & 0x00FF) << 8) | 0x0D);
 }
 
-/*
- * copy_statusbar
- *   DESCRIPTION: Copy one plane of a screen from the build buffer to the
- *                video memory.
- *   INPUTS: img -- a pointer to a single screen plane in the build buffer
- *           scr_addr -- the destination offset in video memory
- *   OUTPUTS: none
- *   RETURN VALUE: none
- *   SIDE EFFECTS: copies a plane from the build buffer to video memory
- */
-void copy_statusbar(unsigned char* img, unsigned short scr_addr) {
-    /*
-     * memcpy is actually probably good enough here, and is usually
-     * implemented using ISA-specific features like those below,
-     * but the code here provides an example of x86 string moves
-     */
-    asm volatile ("                                             \n\
-        cld                                                     \n\
-        movl $1440,%%ecx                                       \n\
-        rep movsb    /* copy ECX bytes from M[ESI] to M[EDI] */ \n\
-        "
-        : /* no outputs */
-        : "S"(img), "D"(mem_image + scr_addr)
-        : "eax", "ecx", "memory"
-    );
-}
 
 /*
  * clear_screens
@@ -685,7 +652,17 @@ void draw_full_block(int pos_x, int pos_y, unsigned char* blk) {
     }
 }
 
-/* Masking routine TO BE WRITTEN MORE LATER
+/*
+ * draw_player_block
+ *   DESCRIPTION: Draw a BLOCK_X_DIM x BLOCK_Y_DIM block at absolute
+ *                coordinates.  Mask any portion of the block that's not 1
+ *   INPUTS: (pos_x,pos_y) -- coordinates of upper left corner of block
+ *           blk -- image data for block (one byte per pixel, as a C array
+ *                  of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM])
+ *           mask - mask data for block that should be copied as a C array of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM]
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: draws into the build buffer
  */
 void draw_player_block(int pos_x, int pos_y, unsigned char * blk, unsigned char * mask) {
     int dx, dy;          /* loop indices for x and y traversal of block */
@@ -734,6 +711,7 @@ void draw_player_block(int pos_x, int pos_y, unsigned char * blk, unsigned char 
     /* Draw the clipped image. */
     for (dy = 0; dy < y_bottom; dy++, pos_y++) {
         for (dx = 0; dx < x_right; dx++, pos_x++, blk++)
+            // check if the mask bit is 1, if so, copy. else do not
             if(mask[dy * BLOCK_X_DIM + dx] == 1) {
                 *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
                 (3 - (pos_x & 3)) * SCROLL_SIZE) = *blk;
@@ -745,7 +723,14 @@ void draw_player_block(int pos_x, int pos_y, unsigned char * blk, unsigned char 
  }
 
 /*
- *
+ * store_background
+ *   DESCRIPTION: save the background image into the buffer
+ *   INPUTS: (pos_x,pos_y) -- coordinates of upper left corner of block
+ *           buffer -- image data for block (one byte per pixel, as a C array
+ *                  of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM])
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: draws into the build buffer
  */
  void store_background(int pos_x, int pos_y, unsigned char * buffer) {
     int dx, dy;          /* loop indices for x and y traversal of block */
@@ -792,6 +777,7 @@ void draw_player_block(int pos_x, int pos_y, unsigned char * blk, unsigned char 
     /* Draw the clipped image. */
     for (dy = 0; dy < y_bottom; dy++, pos_y++) {
         for (dx = 0; dx < x_right; dx++, pos_x++){
+            // copy into the buffer of each pixel of that block in the original image
             buffer[dy * BLOCK_X_DIM + dx] = *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH + (3 - (pos_x & 3)) * SCROLL_SIZE);
         }
         pos_x -= x_right;
@@ -1193,7 +1179,34 @@ static void copy_image(unsigned char* img, unsigned short scr_addr) {
      */
     asm volatile ("                                             \n\
         cld                                                     \n\
-        movl $14560,%%ecx                                       \n\
+        movl $14560,%%ecx /* screen size - status bar size*/    \n\
+        rep movsb    /* copy ECX bytes from M[ESI] to M[EDI] */ \n\
+        "
+        : /* no outputs */
+        : "S"(img), "D"(mem_image + scr_addr)
+        : "eax", "ecx", "memory"
+    );
+}
+
+/*
+ * copy_statusbar
+ *   DESCRIPTION: Copy one plane of a screen from the build buffer to the
+ *                video memory.
+ *   INPUTS: img -- a pointer to a single screen plane in the build buffer
+ *           scr_addr -- the destination offset in video memory
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: copies a plane from the build buffer to video memory
+ */
+void copy_statusbar(unsigned char* img, unsigned short scr_addr) {
+    /*
+     * memcpy is actually probably good enough here, and is usually
+     * implemented using ISA-specific features like those below,
+     * but the code here provides an example of x86 string moves
+     */
+    asm volatile ("                                             \n\
+        cld                                                     \n\
+        movl $1440,%%ecx    /*320 * 18 (size of status bar)*/        \n\
         rep movsb    /* copy ECX bytes from M[ESI] to M[EDI] */ \n\
         "
         : /* no outputs */
