@@ -391,6 +391,7 @@ static int total = 0;
  *   SIDE EFFECTS: none
  */
 static void *rtc_thread(void *arg) {
+    
     int ticks = 0;
     int level;
     int ret;

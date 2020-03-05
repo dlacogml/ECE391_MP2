@@ -71,7 +71,7 @@
 #define BUILD_BUF_SIZE          (SCREEN_SIZE + 20000)
 #define BUILD_BASE_INIT         ((BUILD_BUF_SIZE - SCREEN_SIZE) / 2)
 #define FONT_HEIGHT             16              
-#define STATUS_BAR_SIZE         ((FONT_HEIGHT + 2) * IMAGE_X_DIM)           /*font height + 1 pixel above and 1 pixel belo times the width of the screen*/
+#define STATUS_BAR_SIZE         ((FONT_HEIGHT + 2) * IMAGE_X_DIM)           /*font height + 1 pixel above and 1 pixel below times the width of the screen*/
 
 /* Mode X and general VGA parameters */
 #define VID_MEM_SIZE            131072
@@ -1094,6 +1094,14 @@ static void fill_palette() {
     /* Write all 64 colors from array. */
     REP_OUTSB(0x03C9, palette_RGB, 64 * 3);
 }
+
+/**
+ * set palette colors for VGA 
+ */ 
+extern void set_palette_color(){
+    return;
+}
+
 
 /*
  * write_font_data

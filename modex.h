@@ -132,6 +132,8 @@ extern void clear_screens();
  */
 extern void draw_full_block(int pos_x, int pos_y, unsigned char* blk);
 
+extern void set_palette_color();
+
 /*
  * draw a 12x12 block with upper left corner at logical position
  * (pos_x,pos_y); any part of the block outside of the mask
