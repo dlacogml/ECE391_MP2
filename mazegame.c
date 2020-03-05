@@ -443,7 +443,7 @@ static void *rtc_thread(void *arg) {
         // turn the appropriate values into a string to display into the screen
         char str[50];
         turnToString(level, 0, 0, str);
-        show_statusbar(str);
+        show_statusbar(str, level);
 
         // get first Periodic Interrupt
         ret = read(fd, &data, sizeof(unsigned long));

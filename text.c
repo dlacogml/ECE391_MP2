@@ -51,7 +51,7 @@
  *   RETURN VALUE: the buffer unsigned char*
  *   SIDE EFFECTS: changes the buffer
  */
-unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
+unsigned char * text_to_graphics(char * str, unsigned char * buffer, unsigned char bar_color, unsigned char text_color) {
     // initialize variables
     int curr;
     int i;
@@ -68,7 +68,7 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
                 for(curr = 0; curr < 8; curr++) {
                     // there are four planes going from 3 --> 2 --> 1 --> 0
                     index = (((STATUS_BAR_HEIGHT * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
-                    buffer[index] = 0x3;
+                    buffer[index] = bar_color;
                 }
             }
             // get the ascii character from font_data
@@ -80,9 +80,9 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer) {
                 index = (((STATUS_BAR_HEIGHT * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
                 // check if it is a background (0) or a text (1)
                 if((char_data & 0x80 >> curr) == 0x0) {
-                    buffer[index] = 0x3;
+                    buffer[index] = bar_color;
                 } else {
-                    buffer[index] = 0x0;
+                    buffer[index] = text_color;
                 }
             }
         }
