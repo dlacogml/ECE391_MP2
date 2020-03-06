@@ -51,7 +51,7 @@
  *   RETURN VALUE: the buffer unsigned char*
  *   SIDE EFFECTS: changes the buffer
  */
-unsigned char * text_to_graphics(char * str, unsigned char * buffer, unsigned char bar_color, unsigned char text_color) {
+unsigned char * text_to_graphics(char * str, unsigned char * buffer, unsigned char bar_color) {
     // initialize variables
     int curr;
     int i;
@@ -66,6 +66,7 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer, unsigned ch
             if(i == 0 || i == 17) {
                 // fill with background colors
                 for(curr = 0; curr < 8; curr++) {
+                    // calculate the index of the buffer accounting for the plane number
                     // there are four planes going from 3 --> 2 --> 1 --> 0
                     index = (((STATUS_BAR_HEIGHT * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
                     buffer[index] = bar_color;
@@ -76,13 +77,13 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer, unsigned ch
             // each ascii character has 8 columns
             for(curr = 0; curr < 8; curr++) {
                 // calculate the index of the buffer accounting for the plane number
-                // 18 is the height of the status bar, 320 is the width of the status bar and 4 is the number of planes
+                // There are 4 planes and it goes from 3 --> 2 --> 1 --> 0, hence the 4 and 3
                 index = (((STATUS_BAR_HEIGHT * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
-                // check if it is a background (0) or a text (1)
+                // check if it is a background (0) or a text (1) and bit shift right
                 if((char_data & 0x80 >> curr) == 0x0) {
                     buffer[index] = bar_color;
                 } else {
-                    buffer[index] = text_color;
+                    buffer[index] = 0x0;                // 0x0 is black
                 }
             }
         }
