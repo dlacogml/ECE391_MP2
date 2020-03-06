@@ -391,7 +391,7 @@ static int total = 0;
  *   SIDE EFFECTS: none
  */
 static void *rtc_thread(void *arg) {
-    
+
     int ticks = 0;
     int level;
     int ret;
@@ -553,7 +553,7 @@ static void *rtc_thread(void *arg) {
                 }
             }
             
-            //if(need_redraw) {
+            // if(need_redraw) {
                 
                 // save the background
                 store_background(play_x, play_y, maze_buffer);
@@ -563,16 +563,7 @@ static void *rtc_thread(void *arg) {
                 show_screen();
                 // draw the background back
                 draw_full_block(play_x, play_y, maze_buffer);
-            //}
-
-            // // save the background
-            // store_background(play_x, play_y, maze_buffer);
-            // // draw the character on the new position
-            // draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));  
-                
-            // show_screen();
-            // // draw the background back
-            // draw_full_block(play_x, play_y, maze_buffer);
+            // }
                   
             need_redraw = 0; 
 
@@ -582,7 +573,7 @@ static void *rtc_thread(void *arg) {
             int diff = difftime(end, start);
             // display the correct level, minutes passed and time passed on the display
             turnToString(level, diff / 60, diff % 60, str);
-            show_statusbar(str); 
+            show_statusbar(str, level); 
         }  
     }
     if (quit_flag == 0)
