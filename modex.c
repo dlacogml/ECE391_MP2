@@ -134,7 +134,7 @@ static unsigned short text_graphics[NUM_GRAPHICS_REGS] = {
     0xFF08
 };
 
-static unsigned short player_palette[10][3] = {
+static unsigned char player_palette[10][3] = {
     {0x0, 0x09, 0x03},
     {0x2, 0xF, 0x4},
     {0xD, 0xA, 0x10},
@@ -147,7 +147,20 @@ static unsigned short player_palette[10][3] = {
     {0x22, 0x12, 0x5}
 };
 
-static unsigned short wall_palette[10][3] = {
+static unsigned char wall_outline_palette[10][3] = {
+    {0xFF, 0xFF, 0xFF},
+    {0x15, 0x15, 0x15},
+    {0x11, 0x11, 0x11},
+    {0xFF, 0xFF, 0xFF},
+    {0x15, 0x15, 0x15},
+    {0x11, 0x11, 0x11},
+    {0xFF, 0xFF, 0xFF},
+    {0x15, 0x15, 0x15},
+    {0x11, 0x11, 0x11},
+    {0xFF, 0xFF, 0xFF}
+}
+
+static unsigned char wall_palette[10][3] = {
     {0x1F, 0x2F, 0x12},
     {0x3, 0x20, 0x0},
     {0x11, 0x15, 0x13},
@@ -160,12 +173,12 @@ static unsigned short wall_palette[10][3] = {
     {0x0, 0x09, 0x03}
 }
 
-static unsigned short status_palette[10] = {
-    0x3, 0x5, 0x7, 0x9, 0xB, 0xD, 0x12, 0x15, 0x17, 0x19
+static unsigned char status_palette[10] = {
+    0x3, 0x5, 0x3, 0x5, 0x3, 0x5, 0x3, 0x5, 0x3, 0x5
 }
 
-static unsigned short text_palette[10] = {
-    0x13, 0x15, 0x17, 0x19, 0x1B, 0x1D, 0x2, 0x1, 0xA, 0xC
+static unsigned char text_palette[10] = {
+    0xF, 0x13, 0xF, 0x13, 0xF, 0x13, 0F, 0x13, 0xF, 0x13
 }
 
 /* local functions--see function headers for details */
@@ -1138,9 +1151,8 @@ static void fill_palette() {
  */ 
 extern void set_palette_color(int level, int tick){
 
-    unsigned char palette_colors[3] = {0x20, 0x28, 0x08};
-
     /*change player's palette*/
+    // 0x20 is the player
     OUTB(0x3C8, 0x20);                          // write to the DAC Address Write Mode Register
 
     /*Calculate the values to write out to the DAC Data Register*/
@@ -1154,14 +1166,15 @@ extern void set_palette_color(int level, int tick){
     OUTB(0x3C9, green);                          // write to the DAC Data Register
     OUTB(0x3C9, blue);                          // write to the DAC Data Register
 
-    /* change the wall's palette
-     *
+    /* 
+     * change the wall's palette
+     * 0x21 is the outline, 0x22 is the rest of it
      */
     OUTB(0x3C8, 0x21);                          // write to the DAC Address Write Mode Register
 
-    int red = wall_palette[level][0];
-    int green = wall_palette[level][1];
-    int blue = wall_palette[level][0];
+    int red = wall_outline_palette[level][0];
+    int green = wall_outline_palette[level][1];
+    int blue = wall_outline_palette[level][0];
 
     OUTB(0x3C9, red);                             // write to the DAC Data Register
     OUTB(0x3C9, green);                           // write to the DAC Data Register
@@ -1176,9 +1189,6 @@ extern void set_palette_color(int level, int tick){
     OUTB(0x3C9, red);                           // write to the DAC Data Register
     OUTB(0x3C9, green);                         // write to the DAC Data Register
     OUTB(0x3C9, blue);                          // write to the DAC Data Register
-
-
-    
 
     // syntax: OUTB(port, val)
     return;
