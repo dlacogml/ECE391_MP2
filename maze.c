@@ -735,49 +735,38 @@ int add_a_fruit() {
  *   RETURN VALUE: 
  *   SIDE EFFECTS: changes str to the string to be put on the status bar
  */
-extern void turnToString(int level, int min, int sec, char * str) {
-    
-    int nums_of_char = 40;              // the number of chars that can fit into the status bar
-
-
+unsigned char turnToString(int level, int min, int sec, char * str) {
     // check if the number of fruits in the game is 1 so that it says "Fruit" instead of "Fruits"
     if(n_fruits == 1) {
-        // check if the seconds are less than 10 to create the appropriate string
         if(sec < 10) {
-            // check if the minutes are less than 10 to create the appropriate string
             if(min < 10) {
-                snprintf(str, (nums_of_char + 1), "     Level:  %d    %d Fruit    0%d:0%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level:  %d    %d Fruit    0%d:0%d      ", level, n_fruits , min, sec);
             } else {
-                snprintf(str, (nums_of_char + 1), "     Level:  %d    %d Fruit    %d:0%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level:  %d    %d Fruit    %d:0%d      ", level, n_fruits , min, sec);
             }
         } else {
-            // check if the minutes are less than 10 to create the appropriate string
             if(min < 10) {
-                snprintf(str, (nums_of_char + 1), "     Level:  %d    %d Fruit    0%d:%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level:  %d    %d Fruit    0%d:%d      ", level, n_fruits , min, sec);
             } else {
-                snprintf(str, (nums_of_char + 1), "     Level:  %d    %d Fruit    %d:%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level:  %d    %d Fruit    %d:%d      ", level, n_fruits , min, sec);
             }
         }
     } 
     else {
-        // check if the seconds are less than 10 to create the appropriate string
         if(sec < 10) {
-            // check if the minutes are less than 10 to create the appropriate string
             if(min < 10) {
-                snprintf(str, (nums_of_char + 1), "     Level: %2d   %2d Fruits   0%d:0%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level: %2d   %2d Fruits   0%d:0%d      ", level, n_fruits , min, sec);
             } else {
-                snprintf(str, (nums_of_char + 1), "     Level: %2d   %2d Fruits   %d:0%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level: %2d   %2d Fruits   %d:0%d      ", level, n_fruits , min, sec);
             }
         } else {
-            // check if the minutes are less than 10 to create the appropriate string
             if(min < 10) {
-                snprintf(str, (nums_of_char + 1), "     Level: %2d   %2d Fruits   0%d:%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level: %2d   %2d Fruits   0%d:%d      ", level, n_fruits , min, sec);
             } else {
-                snprintf(str, (nums_of_char + 1), "     Level: %2d   %2d Fruits   %d:%d      ", level, n_fruits , min, sec);
+                snprintf(str, 41, "     Level: %2d   %2d Fruits   %d:%d      ", level, n_fruits , min, sec);
             }
         }
     }
-
 }
 
 /* 
