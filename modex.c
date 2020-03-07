@@ -135,47 +135,51 @@ static unsigned short text_graphics[NUM_GRAPHICS_REGS] = {
 };
 
 static unsigned char player_palette[10][3] = {
-    {247, 161, 69},
-    {69, 247, 123},
-    {65, 105, 140},
-    {247, 161, 69},
-    {69, 247, 123},
-    {65, 105, 140},
-    {247, 161, 69},
-    {69, 247, 123},
-    {65, 105, 140},
-    {247, 161, 69}
-};
-
-static unsigned char wall_palette[10][3] = {
-    {255, 17, 0},
-    {0, 225, 30},
-    {255, 153, 180},
-    {255, 17, 0},
-    {0, 225, 30},
-    {255, 153, 180},
-    {255, 17, 0},
-    {0, 225, 30},
-    {255, 153, 180},
-    {255, 17, 0}
+    {0x0, 0x09, 0x03},
+    {0x2, 0xF, 0x4},
+    {0xD, 0xA, 0x10},
+    {0x3, 0xB, 0x0},
+    {0x11, 0x5, 0x7},
+    {0x1, 0x3, 0xA},
+    {0x4, 0x1, 0x2},
+    {0x6, 0x8, 0x8},
+    {0x5, 0x10, 0x20},
+    {0x22, 0x12, 0x5}
 };
 
 static unsigned char wall_outline_palette[10][3] = {
-    {255, 255, 255},
-    {225, 225, 255},
-    {255, 255, 255},
-    {225, 225, 255},
-    {255, 255, 255},
-    {225, 225, 255},
-    {255, 255, 255},
-    {225, 225, 255},
-    {255, 255, 255},
-    {225, 225, 255}
-};
+    {0xFF, 0xFF, 0xFF},
+    {0x15, 0x15, 0x15},
+    {0x11, 0x11, 0x11},
+    {0xFF, 0xFF, 0xFF},
+    {0x15, 0x15, 0x15},
+    {0x11, 0x11, 0x11},
+    {0xFF, 0xFF, 0xFF},
+    {0x15, 0x15, 0x15},
+    {0x11, 0x11, 0x11},
+    {0xFF, 0xFF, 0xFF}
+}
+
+static unsigned char wall_palette[10][3] = {
+    {0x1F, 0x2F, 0x12},
+    {0x3, 0x20, 0x0},
+    {0x11, 0x15, 0x13},
+    {0xD, 0xA1, 0x11},
+    {0x13, 0x17, 0xA},
+    {0x3, 0x12, 0x2},
+    {0x5, 0x10, 0x20},
+    {0x16, 0x8, 0x8},
+    {0x2B, 0x12, 0x5},
+    {0x0, 0x09, 0x03}
+}
 
 static unsigned char status_palette[10] = {
     0x3, 0x5, 0x3, 0x5, 0x3, 0x5, 0x3, 0x5, 0x3, 0x5
-};
+}
+
+static unsigned char text_palette[10] = {
+    0xF, 0x13, 0xF, 0x13, 0xF, 0x13, 0F, 0x13, 0xF, 0x13
+}
 
 /* local functions--see function headers for details */
 static int open_memory_and_ports();
@@ -597,14 +601,16 @@ void show_statusbar(char * str, int level) {
     unsigned char buffer[STATUS_BAR_SIZE];
     // the status background's color
     unsigned char bar_color = status_palette[level - 1];
+    unsigned char text_color = text_palette[level - 1];
 
     /* Calculate the source address. */
-    addr = text_to_graphics(str, buffer, bar_color);
+    addr = text_to_graphics(str, buffer, bar_color, text_color);
 
     /* Draw to each plane in the video memory. */
     for (i = 0; i < 4; i++) { 
         SET_WRITE_MASK(1 << (i + 8));
-        copy_statusbar(addr + ((p_off - i + 4) & 3) * STATUS_BAR_SIZE + (p_off < i), 0);
+        // the size of the scroll bar is 320 * 18 and for each plane would be 1440
+        copy_statusbar(addr + ((p_off - i + 4) & 3) * 1440 + (p_off < i), 0);
 
     }    
 
@@ -1143,20 +1149,16 @@ static void fill_palette() {
 /**
  * set palette colors for VGA 
  */ 
-extern void set_palette_color(int level, int time){
+extern void set_palette_color(int level, int tick){
 
     /*change player's palette*/
     // 0x20 is the player
     OUTB(0x3C8, 0x20);                          // write to the DAC Address Write Mode Register
 
     /*Calculate the values to write out to the DAC Data Register*/
-    int red; 
-    int green;
-    int blue;
-
-    red = player_palette[time % 10][0];
-    green = player_palette[time % 10][1];
-    blue = player_palette[time % 10][2];
+    int red = player_palette[tick % 10][0];
+    int green = player_palette[tick % 10][1];
+    int blue = player_palette[tick % 10][1];
 
     /*Write to the DAC Data Register 3 times; each corresponds to the RGB color values*/
 
@@ -1166,12 +1168,13 @@ extern void set_palette_color(int level, int time){
 
     /* 
      * change the wall's palette
+     * 0x21 is the outline, 0x22 is the rest of it
      */
     OUTB(0x3C8, 0x21);                          // write to the DAC Address Write Mode Register
 
-    red = wall_outline_palette[level - 1][0];
-    green = wall_outline_palette[level - 1][1];
-    blue = wall_outline_palette[level - 1][2];
+    int red = wall_outline_palette[level][0];
+    int green = wall_outline_palette[level][1];
+    int blue = wall_outline_palette[level][0];
 
     OUTB(0x3C9, red);                             // write to the DAC Data Register
     OUTB(0x3C9, green);                           // write to the DAC Data Register
@@ -1179,9 +1182,9 @@ extern void set_palette_color(int level, int time){
 
     OUTB(0x3C8, 0x22);                           // write to the DAC Address Write Mode Register
 
-    red = wall_palette[level - 1][0];
-    green = wall_palette[level - 1][1];
-    blue = wall_palette[level - 1][2];
+    int red = wall_palette[level][0];
+    int green = wall_palette[level][1];
+    int blue = wall_palette[level][0];
 
     OUTB(0x3C9, red);                           // write to the DAC Data Register
     OUTB(0x3C9, green);                         // write to the DAC Data Register
@@ -1305,7 +1308,7 @@ void copy_statusbar(unsigned char* img, unsigned short scr_addr) {
      */
     asm volatile ("                                             \n\
         cld                                                     \n\
-        movl $1440,%%ecx    /*STATUS_BAR_SIZE is 1440 (size of status bar)*/        \n\
+        movl $1440,%%ecx    /*320 * 18 (size of status bar)*/        \n\
         rep movsb    /* copy ECX bytes from M[ESI] to M[EDI] */ \n\
         "
         : /* no outputs */

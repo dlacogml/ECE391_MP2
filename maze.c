@@ -53,7 +53,7 @@
 #define TEST_MAZE_GEN 0
 
 /* Set to 1 to remove all walls as a debugging aid. (Nate Taylor, S07). */
-#define GOD_MODE 1
+#define GOD_MODE 0
 
 /* local functions--see function headers for details */
 static int mark_maze_area(int x, int y);
@@ -85,11 +85,6 @@ static int maze_x_dim;          /* horizontal dimension of maze */
 static int maze_y_dim;          /* vertical dimension of maze   */
 static int n_fruits;            /* number of fruits in maze     */
 static int exit_x, exit_y;      /* lattice point of maze exit   */
-
-
-static char* fruit_strings[7] = {"an apple!", "ew, grapes", "eh, it's a peach", 
-		"a strawberry", "A BANANA!", "melonwater", "Uh...Dew?"}; /*Honestly no clue where to put this hahaha!*/
-
 
 /* 
  * maze array index calculation macro; maze dimensions are valid only
@@ -742,7 +737,7 @@ int add_a_fruit() {
  *   RETURN VALUE: 
  *   SIDE EFFECTS: changes str to the string to be put on the status bar
  */
-void turnToString(int level, int min, int sec, char * str) {
+unsigned char turnToString(int level, int min, int sec, char * str) {
     // check if the number of fruits in the game is 1 so that it says "Fruit" instead of "Fruits"
     if(n_fruits == 1) {
         if(sec < 10) {

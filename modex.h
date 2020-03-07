@@ -120,7 +120,7 @@ extern void set_view_window(int scr_x, int scr_y);
 extern void show_screen();
 
 /* display the status bar on the monitor */
-extern void show_statusbar(char * str, int level);
+extern void show_statusbar(char * str);
 
 /* clear the video memory in mode X */
 extern void clear_screens();
@@ -132,7 +132,7 @@ extern void clear_screens();
  */
 extern void draw_full_block(int pos_x, int pos_y, unsigned char* blk);
 
-extern void set_palette_color(int level, int player_color_change);
+extern void set_palette_color();
 
 /*
  * draw a 12x12 block with upper left corner at logical position
