@@ -565,9 +565,6 @@ static void *rtc_thread(void *arg) {
             // draw the background back
             draw_full_block(play_x, play_y, maze_buffer);
             
-            int font_height = 8; 
-            int font_width = 16;
-            char word[15] = "hellooooooooooo";
             // switch(check_for_fruit(play_x, play_y)) {
             //     case 0:
             //         break;
@@ -588,15 +585,19 @@ static void *rtc_thread(void *arg) {
             // }
 
 
+            if(check_for_fruit(play_x, play_y)){
+                int font_height = 8; 
+                int font_width = 16;
+                char word[15] = "hellooooooooooo";
+                
+                unsigned char floating_background[font_height * 15 * font_width];
 
-                unsigned char floating_buffer[font_height * 15 * font_width];
-
-                save_floating_background(play_x + 20, play_y + 20, floating_buffer, word);
+                save_floating_background(play_x - 20, play_y - 20, floating_background);
                 unsigned char floating_mask[font_height * font_width * 15];
                 text_to_mask(word, floating_mask);
-                // draw_floating_text(play_x + 20, play_y + 20,floating_mask, word);
-                // redraw_floating_background(play_x + 20, play_y + 20, floating_buffer, word);
-
+                draw_floating_text(play_x - 20, play_y - 20,floating_mask);
+                redraw_floating_background(play_x - 20, play_y - 20, floating_background);
+            }
             // calculate how much time has passed 
             time_t end;
             time(&end);
