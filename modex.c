@@ -71,7 +71,7 @@
 #define BUILD_BUF_SIZE          (SCREEN_SIZE + 20000)
 #define BUILD_BASE_INIT         ((BUILD_BUF_SIZE - SCREEN_SIZE) / 2)
 #define FONT_HEIGHT             16              
-#define STATUS_BAR_SIZE         ((FONT_HEIGHT + 2) * IMAGE_X_DIM)           /*font height + 1 pixel above and 1 pixel below times the width of the screen*/
+#define STATUS_BAR_SIZE         ((FONT_HEIGHT + 2) * IMAGE_X_DIM)           /*font height + 1 pixel above and 1 pixel belo times the width of the screen*/
 
 /* Mode X and general VGA parameters */
 #define VID_MEM_SIZE            131072
@@ -135,51 +135,40 @@ static unsigned short text_graphics[NUM_GRAPHICS_REGS] = {
 };
 
 static unsigned char player_palette[10][3] = {
-    {0x0, 0x09, 0x03},
-    {0x2, 0xF, 0x4},
-    {0xD, 0xA, 0x10},
-    {0x3, 0xB, 0x0},
-    {0x11, 0x5, 0x7},
-    {0x1, 0x3, 0xA},
-    {0x4, 0x1, 0x2},
-    {0x6, 0x8, 0x8},
-    {0x5, 0x10, 0x20},
-    {0x22, 0x12, 0x5}
+    {247, 161, 69},
+    {69, 247, 123},
+    {65, 105, 140},
+};
+
+static unsigned char wall_palette[10][3] = {
+    {255, 17, 0},
+    {0, 225, 30},
+    {255, 153, 180},
+    {255, 17, 0},
+    {0, 225, 30},
+    {255, 153, 180},
+    {255, 17, 0},
+    {0, 225, 30},
+    {255, 153, 180},
+    {255, 17, 0}
 };
 
 static unsigned char wall_outline_palette[10][3] = {
-    {0xFF, 0xFF, 0xFF},
-    {0x15, 0x15, 0x15},
-    {0x11, 0x11, 0x11},
-    {0xFF, 0xFF, 0xFF},
-    {0x15, 0x15, 0x15},
-    {0x11, 0x11, 0x11},
-    {0xFF, 0xFF, 0xFF},
-    {0x15, 0x15, 0x15},
-    {0x11, 0x11, 0x11},
-    {0xFF, 0xFF, 0xFF}
-}
-
-static unsigned char wall_palette[10][3] = {
-    {0x1F, 0x2F, 0x12},
-    {0x3, 0x20, 0x0},
-    {0x11, 0x15, 0x13},
-    {0xD, 0xA1, 0x11},
-    {0x13, 0x17, 0xA},
-    {0x3, 0x12, 0x2},
-    {0x5, 0x10, 0x20},
-    {0x16, 0x8, 0x8},
-    {0x2B, 0x12, 0x5},
-    {0x0, 0x09, 0x03}
-}
+    {255, 255, 255},
+    {225, 225, 255},
+    {255, 255, 255},
+    {225, 225, 255},
+    {255, 255, 255},
+    {225, 225, 255},
+    {255, 255, 255},
+    {225, 225, 255},
+    {255, 255, 255},
+    {225, 225, 255}
+};
 
 static unsigned char status_palette[10] = {
     0x3, 0x5, 0x3, 0x5, 0x3, 0x5, 0x3, 0x5, 0x3, 0x5
-}
-
-static unsigned char text_palette[10] = {
-    0xF, 0x13, 0xF, 0x13, 0xF, 0x13, 0F, 0x13, 0xF, 0x13
-}
+};
 
 /* local functions--see function headers for details */
 static int open_memory_and_ports();
@@ -599,12 +588,9 @@ void show_statusbar(char * str, int level) {
     
     // buffer the size of the status bar
     unsigned char buffer[STATUS_BAR_SIZE];
-    // the status background's color
     unsigned char bar_color = status_palette[level - 1];
-    unsigned char text_color = text_palette[level - 1];
-
     /* Calculate the source address. */
-    addr = text_to_graphics(str, buffer, bar_color, text_color);
+    addr = text_to_graphics(str, buffer, bar_color);
 
     /* Draw to each plane in the video memory. */
     for (i = 0; i < 4; i++) { 
@@ -775,6 +761,7 @@ void draw_player_block(int pos_x, int pos_y, unsigned char * blk, unsigned char 
 
  }
 
+ 
 /*
  * store_background
  *   DESCRIPTION: save the background image into the buffer
@@ -836,6 +823,214 @@ void draw_player_block(int pos_x, int pos_y, unsigned char * blk, unsigned char 
         pos_x -= x_right;
     }
  }
+
+
+/*
+ * draw_floating_text
+ *   DESCRIPTION: Draw a BLOCK_X_DIM x BLOCK_Y_DIM block at absolute
+ *                coordinates.  Mask any portion of the block that's not 1
+ *   INPUTS: (pos_x,pos_y) -- coordinates of upper left corner of block
+ *           blk -- image data for block (one byte per pixel, as a C array
+ *                  of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM])
+ *           mask - mask data for block that should be copied as a C array of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM]
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: draws into the build buffer
+ */
+void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, char * str) {
+    int dx, dy;          /* loop indices for x and y traversal of block */
+    int x_left, x_right; /* clipping limits in horizontal dimension     */
+    int y_top, y_bottom; /* clipping limits in vertical dimension       */
+
+    int float_length = FONT_WIDTH * strlen(str);
+
+    /* If block is completely off-screen, we do nothing. */
+    if (pos_x + float_length <= show_x || pos_x >= show_x + SCROLL_X_DIM ||
+        pos_y + FONT_HEIGHT <= show_y || pos_y >= show_y + SCROLL_Y_DIM)
+        return;
+
+    /* Clip any pixels falling off the left side of screen. */
+    if ((x_left = show_x - pos_x) < 0)
+        x_left = 0;
+    /* Clip any pixels falling off the right side of screen. */
+    if ((x_right = show_x + SCROLL_X_DIM - pos_x) > float_length)
+        x_right = float_length;
+    /* Skip the first x_left pixels in both screen position and block data. */
+    pos_x += x_left;
+
+    /*
+     * Adjust x_right to hold the number of pixels to be drawn, and x_left
+     * to hold the amount to skip between rows in the block, which is the
+     * sum of the original left clip and (float_length - the original right
+     * clip).
+     */
+    x_right -= x_left;
+    x_left = float_length - x_right;
+
+    /* Clip any pixels falling off the top of the screen. */
+    if ((y_top = show_y - pos_y) < 0)
+        y_top = 0;
+    /* Clip any pixels falling off the bottom of the screen. */
+    if ((y_bottom = show_y + SCROLL_Y_DIM - pos_y) > FONT_HEIGHT)
+        y_bottom = FONT_HEIGHT;
+    /*
+     * Skip the first y_left pixel in screen position and the first
+     * y_left rows of pixels in the block data.
+     */
+    pos_y += y_top;
+    /* Adjust y_bottom to hold the number of pixel rows to be drawn. */
+    y_bottom -= y_top;
+
+    /* Draw the clipped image. */
+    for (dy = 0; dy < y_bottom; dy++, pos_y++) {
+        for (dx = 0; dx < x_right; dx++, pos_x++) {
+            if(mask[dy * float_length + dx] == 1) {
+                *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
+                (3 - (pos_x & 3)) * SCROLL_SIZE) = 0x0;
+            }
+        }
+            
+        pos_x -= x_right;
+    }
+
+ }
+
+/*
+ * store_background
+ *   DESCRIPTION: save the background image into the buffer
+ *   INPUTS: (pos_x,pos_y) -- coordinates of upper left corner of block
+ *           buffer -- image data for block (one byte per pixel, as a C array
+ *                  of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM])
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: draws into the build buffer
+ */
+ void save_floating_background(int pos_x, int pos_y, unsigned char * buffer, char * str) {
+    int dx, dy;          /* loop indices for x and y traversal of block */
+    int x_left, x_right; /* clipping limits in horizontal dimension     */
+    int y_top, y_bottom; /* clipping limits in vertical dimension       */
+
+    int float_length = strlen(str) * FONT_WIDTH;
+
+    /* If block is completely off-screen, we do nothing. */
+    if (pos_x + float_length <= show_x || pos_x >= show_x + SCROLL_X_DIM ||
+        pos_y + FONT_HEIGHT <= show_y || pos_y >= show_y + SCROLL_Y_DIM)
+        return;
+
+    /* Clip any pixels falling off the left side of screen. */
+    if ((x_left = show_x - pos_x) < 0)
+        x_left = 0;
+    /* Clip any pixels falling off the right side of screen. */
+    if ((x_right = show_x + SCROLL_X_DIM - pos_x) > float_length)
+        x_right = float_length;
+    /* Skip the first x_left pixels in both screen position and block data. */
+    pos_x += x_left;
+
+    /*
+     * Adjust x_right to hold the number of pixels to be drawn, and x_left
+     * to hold the amount to skip between rows in the block, which is the
+     * sum of the original left clip and (float_length - the original right
+     * clip).
+     */
+    x_right -= x_left;
+    x_left = float_length - x_right;
+
+    /* Clip any pixels falling off the top of the screen. */
+    if ((y_top = show_y - pos_y) < 0)
+        y_top = 0;
+    /* Clip any pixels falling off the bottom of the screen. */
+    if ((y_bottom = show_y + SCROLL_Y_DIM - pos_y) > FONT_HEIGHT)
+        y_bottom = FONT_HEIGHT;
+    /*
+     * Skip the first y_left pixel in screen position and the first
+     * y_left rows of pixels in the block data.
+     */
+    pos_y += y_top;
+    /* Adjust y_bottom to hold the number of pixel rows to be drawn. */
+    y_bottom -= y_top;
+
+    /* Draw the clipped image. */
+    for (dy = 0; dy < y_bottom; dy++, pos_y++) {
+        for (dx = 0; dx < x_right; dx++, pos_x++){
+            // copy into the buffer of each pixel of that block in the original image
+            buffer[dy * float_length + dx] = *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH + (3 - (pos_x & 3)) * SCROLL_SIZE);
+        }
+        pos_x -= x_right;
+    }
+ }
+
+ /*
+ * redraw_floating_background
+ *   DESCRIPTION: Draw a BLOCK_X_DIM x BLOCK_Y_DIM block at absolute
+ *                coordinates.  Mask any portion of the block that's not 1
+ *   INPUTS: (pos_x,pos_y) -- coordinates of upper left corner of block
+ *           blk -- image data for block (one byte per pixel, as a C array
+ *                  of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM])
+ *           mask - mask data for block that should be copied as a C array of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM]
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: draws into the build buffer
+ */
+void redraw_floating_background(int pos_x, int pos_y, unsigned char * blk, char * str) {
+    int dx, dy;          /* loop indices for x and y traversal of block */
+    int x_left, x_right; /* clipping limits in horizontal dimension     */
+    int y_top, y_bottom; /* clipping limits in vertical dimension       */
+
+    int float_length = strlen(str) * FONT_WIDTH;
+
+    /* If block is completely off-screen, we do nothing. */
+    if (pos_x + float_length <= show_x || pos_x >= show_x + SCROLL_X_DIM ||
+        pos_y + FONT_HEIGHT <= show_y || pos_y >= show_y + SCROLL_Y_DIM)
+        return;
+
+    /* Clip any pixels falling off the left side of screen. */
+    if ((x_left = show_x - pos_x) < 0)
+        x_left = 0;
+    /* Clip any pixels falling off the right side of screen. */
+    if ((x_right = show_x + SCROLL_X_DIM - pos_x) > float_length)
+        x_right = float_length;
+    /* Skip the first x_left pixels in both screen position and block data. */
+    pos_x += x_left;
+    blk += x_left;
+
+    /*
+     * Adjust x_right to hold the number of pixels to be drawn, and x_left
+     * to hold the amount to skip between rows in the block, which is the
+     * sum of the original left clip and (float_length - the original right
+     * clip).
+     */
+    x_right -= x_left;
+    x_left = float_length - x_right;
+
+    /* Clip any pixels falling off the top of the screen. */
+    if ((y_top = show_y - pos_y) < 0)
+        y_top = 0;
+    /* Clip any pixels falling off the bottom of the screen. */
+    if ((y_bottom = show_y + SCROLL_Y_DIM - pos_y) > FONT_HEIGHT)
+        y_bottom = FONT_HEIGHT;
+    /*
+     * Skip the first y_left pixel in screen position and the first
+     * y_left rows of pixels in the block data.
+     */
+    pos_y += y_top;
+    blk += y_top * float_length;
+    /* Adjust y_bottom to hold the number of pixel rows to be drawn. */
+    y_bottom -= y_top;
+
+    /* Draw the clipped image. */
+    for (dy = 0; dy < y_bottom; dy++, pos_y++) {
+        for (dx = 0; dx < x_right; dx++, pos_x++, blk++){
+            /*write stuff here*/
+            *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
+            (3 - (pos_x & 3)) * SCROLL_SIZE) = *blk;
+        }
+        pos_x -= x_right;
+        blk += x_left;
+    }
+
+ }
+
+
 
 /*
  * The functions inside the preprocessor block below rely on functions
@@ -1149,16 +1344,20 @@ static void fill_palette() {
 /**
  * set palette colors for VGA 
  */ 
-extern void set_palette_color(int level, int tick){
+extern void set_palette_color(int level, int time){
 
     /*change player's palette*/
     // 0x20 is the player
     OUTB(0x3C8, 0x20);                          // write to the DAC Address Write Mode Register
 
     /*Calculate the values to write out to the DAC Data Register*/
-    int red = player_palette[tick % 10][0];
-    int green = player_palette[tick % 10][1];
-    int blue = player_palette[tick % 10][1];
+    int red; 
+    int green;
+    int blue;
+
+    red = player_palette[time % 3][0];
+    green = player_palette[time % 3][1];
+    blue = player_palette[time % 3][2];
 
     /*Write to the DAC Data Register 3 times; each corresponds to the RGB color values*/
 
@@ -1168,13 +1367,12 @@ extern void set_palette_color(int level, int tick){
 
     /* 
      * change the wall's palette
-     * 0x21 is the outline, 0x22 is the rest of it
      */
     OUTB(0x3C8, 0x21);                          // write to the DAC Address Write Mode Register
 
-    int red = wall_outline_palette[level][0];
-    int green = wall_outline_palette[level][1];
-    int blue = wall_outline_palette[level][0];
+    red = wall_outline_palette[level - 1][0];
+    green = wall_outline_palette[level - 1][1];
+    blue = wall_outline_palette[level - 1][2];
 
     OUTB(0x3C9, red);                             // write to the DAC Data Register
     OUTB(0x3C9, green);                           // write to the DAC Data Register
@@ -1182,9 +1380,9 @@ extern void set_palette_color(int level, int tick){
 
     OUTB(0x3C8, 0x22);                           // write to the DAC Address Write Mode Register
 
-    int red = wall_palette[level][0];
-    int green = wall_palette[level][1];
-    int blue = wall_palette[level][0];
+    red = wall_palette[level - 1][0];
+    green = wall_palette[level - 1][1];
+    blue = wall_palette[level - 1][2];
 
     OUTB(0x3C9, red);                           // write to the DAC Data Register
     OUTB(0x3C9, green);                         // write to the DAC Data Register
@@ -1193,7 +1391,6 @@ extern void set_palette_color(int level, int tick){
     // syntax: OUTB(port, val)
     return;
 }
-
 
 /*
  * write_font_data

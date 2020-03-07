@@ -54,6 +54,10 @@
 #define SCROLL_X_DIM    IMAGE_X_DIM                /* full image width      */
 #define SCROLL_Y_DIM    (IMAGE_Y_DIM - 18)                /* full image width      */
 #define SCROLL_X_WIDTH  (IMAGE_X_DIM / 4)          /* addresses (bytes)     */
+#define FONT_HEIGHT     16                      /*height of the font according to text.h*/
+#define FONT_WIDTH      8                       /*width of the font according to text.h*/
+
+
 /*
  * NOTES
  *
@@ -120,7 +124,7 @@ extern void set_view_window(int scr_x, int scr_y);
 extern void show_screen();
 
 /* display the status bar on the monitor */
-extern void show_statusbar(char * str);
+extern void show_statusbar(char * str, int level);
 
 /* clear the video memory in mode X */
 extern void clear_screens();
@@ -132,7 +136,7 @@ extern void clear_screens();
  */
 extern void draw_full_block(int pos_x, int pos_y, unsigned char* blk);
 
-extern void set_palette_color();
+extern void set_palette_color(int level, int time);
 
 /*
  * draw a 12x12 block with upper left corner at logical position
@@ -145,6 +149,11 @@ extern void draw_player_block(int pos_x, int pox_y, unsigned char * blk, unsigne
  * saves the background into the buffer
  */
 extern void store_background(int pos_x, int pox_y, unsigned char * buffer);
+
+
+extern void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, char * str);
+extern void redraw_floating_background(int pos_x, int pos_y, unsigned char * background, char * str);
+extern void save_floating_background(int pos_x, int pos_y, unsigned char * buffer, char * str);
 
 /* draw a horizontal line at vertical pixel y within the logical view window */
 extern int draw_horiz_line(int y);

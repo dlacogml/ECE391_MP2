@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
+#include <string.h>
 
 #include "blocks.h"
 #include "maze.h"
@@ -391,12 +392,10 @@ static int total = 0;
  *   SIDE EFFECTS: none
  */
 static void *rtc_thread(void *arg) {
-
     int ticks = 0;
     int level;
     int ret;
     int open[NUM_DIRS];
-    int need_redraw = 0;
     int goto_next_level = 0;
 
     // Loop over levels until a level is lost or quit.
@@ -424,6 +423,8 @@ static void *rtc_thread(void *arg) {
         // Show maze around the player's original position
         (void)unveil_around_player(play_x, play_y);
 
+        set_palette_color(level, 0);
+
         // buffer to store the background
         unsigned char maze_buffer[BLOCK_X_DIM * BLOCK_Y_DIM];
 
@@ -431,11 +432,12 @@ static void *rtc_thread(void *arg) {
         store_background(play_x, play_y, maze_buffer);
         // draw the player to the new position
         draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));
-        
+
         show_screen();
         // draw the background back after the plaer leaves
         draw_full_block(play_x, play_y, maze_buffer);
 
+        int player_color_change = 0;
         time_t start;
 
         time(&start);
@@ -545,27 +547,55 @@ static void *rtc_thread(void *arg) {
                             break;
                     }  
 
-                    need_redraw = 1;
-                } else {
-                    if(check_for_fruit(play_x, play_y)) {
-                        need_redraw = 1;
-                    }
                 }
             }
+
+            player_color_change++;
+            // if statement so that the player's color doesn't change too fast
+            if(player_color_change % 11 == 0)
+                set_palette_color(level, player_color_change);
             
-            // if(need_redraw) {
+            
+            // save the background
+            store_background(play_x, play_y, maze_buffer);
+            // draw the character on the new position
+            draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));  
                 
-                // save the background
-                store_background(play_x, play_y, maze_buffer);
-                // draw the character on the new position
-                draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));  
-                
-                show_screen();
-                // draw the background back
-                draw_full_block(play_x, play_y, maze_buffer);
+            show_screen();
+            // draw the background back
+            draw_full_block(play_x, play_y, maze_buffer);
+            
+            int font_height = 8; 
+            int font_width = 16;
+            char word[15] = "hellooooooooooo";
+            // switch(check_for_fruit(play_x, play_y)) {
+            //     case 0:
+            //         break;
+            //     case 1:
+            //         break;
+            //     case 2:
+            //         break;
+            //     case 3:
+            //         break;
+            //     case 4:
+            //         break;
+            //     case 5:
+            //         break;
+            //     case 6:
+            //         break;
+            //     case 7:
+            //         break;
             // }
-                  
-            need_redraw = 0; 
+
+
+
+                unsigned char floating_buffer[font_height * 15 * font_width];
+
+                save_floating_background(play_x + 20, play_y + 20, floating_buffer, word);
+                unsigned char floating_mask[font_height * font_width * 15];
+                text_to_mask(word, floating_mask);
+                // draw_floating_text(play_x + 20, play_y + 20,floating_mask, word);
+                // redraw_floating_background(play_x + 20, play_y + 20, floating_buffer, word);
 
             // calculate how much time has passed 
             time_t end;

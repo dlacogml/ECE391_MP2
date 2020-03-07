@@ -51,7 +51,7 @@
  *   RETURN VALUE: the buffer unsigned char*
  *   SIDE EFFECTS: changes the buffer
  */
-unsigned char * text_to_graphics(char * str, unsigned char * buffer, unsigned char bar_color, unsigned char text_color) {
+unsigned char * text_to_graphics(char * str, unsigned char * buffer, unsigned char bar_color) {
     // initialize variables
     int curr;
     int i;
@@ -74,7 +74,7 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer, unsigned ch
             // get the ascii character from font_data
             unsigned char char_data = font_data[(int) str[j]][i - 1];
             // each ascii character has 8 columns
-            for(curr = 0; curr < 8; curr++) {
+            for(curr = 0; curr < FONT_WIDTH; curr++) {
                 // calculate the index of the buffer accounting for the plane number
                 // 18 is the height of the status bar, 320 is the width of the status bar and 4 is the number of planes
                 index = (((STATUS_BAR_HEIGHT * IMAGE_X_DIM) / 4) * (3 - (curr) % 4)) + (IMAGE_X_DIM * i + curr) / 4 + (j * 2);
@@ -82,13 +82,49 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer, unsigned ch
                 if((char_data & 0x80 >> curr) == 0x0) {
                     buffer[index] = bar_color;
                 } else {
-                    buffer[index] = text_color;
+                    buffer[index] = 0x0;
                 }
             }
         }
     }
 
     return buffer;
+}
+
+/* 
+ *
+ */
+void text_to_mask(char * str, unsigned char * buffer) {
+    int curr;
+    int i;
+    int j;
+    int index;
+    
+    FILE * fp;
+    fp = fopen ("file.txt", "w+");
+
+
+    int float_length = 15 * FONT_WIDTH;
+
+    for(i = 0; i < 15; i++) {
+        for(j = 0; j < FONT_HEIGHT; j++) {
+
+            unsigned char letter = font_data[(int) str[i]][j];
+            for(curr = 0; curr < FONT_WIDTH; curr++) {
+
+                index = j * float_length + ((i * FONT_WIDTH) + curr); 
+
+                if((letter & 0x80 >> curr) == 0x0) {
+                    buffer[index] = 0;
+                    fprintf(fp,"%d", buffer[index]);
+                } else {
+                    buffer[index] = 1;
+                    fprintf(fp,"%d", buffer[index]);
+                }
+            }
+        }
+    }
+    fclose(fp);
 }
 
 /* 
