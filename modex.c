@@ -837,12 +837,12 @@ void draw_player_block(int pos_x, int pos_y, unsigned char * blk, unsigned char 
  *   RETURN VALUE: none
  *   SIDE EFFECTS: draws into the build buffer
  */
-void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, char * str) {
+void draw_floating_text(int pos_x, int pos_y, unsigned char * mask) {
     int dx, dy;          /* loop indices for x and y traversal of block */
     int x_left, x_right; /* clipping limits in horizontal dimension     */
     int y_top, y_bottom; /* clipping limits in vertical dimension       */
 
-    int float_length = FONT_WIDTH * strlen(str);
+    int float_length = FONT_WIDTH * 15;
 
     /* If block is completely off-screen, we do nothing. */
     if (pos_x + float_length <= show_x || pos_x >= show_x + SCROLL_X_DIM ||
@@ -905,12 +905,12 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, char * str) 
  *   RETURN VALUE: none
  *   SIDE EFFECTS: draws into the build buffer
  */
- void save_floating_background(int pos_x, int pos_y, unsigned char * buffer, char * str) {
+ void save_floating_background(int pos_x, int pos_y, unsigned char * buffer, 15) {
     int dx, dy;          /* loop indices for x and y traversal of block */
     int x_left, x_right; /* clipping limits in horizontal dimension     */
     int y_top, y_bottom; /* clipping limits in vertical dimension       */
 
-    int float_length = strlen(str) * FONT_WIDTH;
+    int float_length = 15 * FONT_WIDTH;
 
     /* If block is completely off-screen, we do nothing. */
     if (pos_x + float_length <= show_x || pos_x >= show_x + SCROLL_X_DIM ||
@@ -971,12 +971,12 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, char * str) 
  *   RETURN VALUE: none
  *   SIDE EFFECTS: draws into the build buffer
  */
-void redraw_floating_background(int pos_x, int pos_y, unsigned char * blk, char * str) {
+void redraw_floating_background(int pos_x, int pos_y, unsigned char * blk) {
     int dx, dy;          /* loop indices for x and y traversal of block */
     int x_left, x_right; /* clipping limits in horizontal dimension     */
     int y_top, y_bottom; /* clipping limits in vertical dimension       */
 
-    int float_length = strlen(str) * FONT_WIDTH;
+    int float_length = 15 * FONT_WIDTH;
 
     /* If block is completely off-screen, we do nothing. */
     if (pos_x + float_length <= show_x || pos_x >= show_x + SCROLL_X_DIM ||
