@@ -152,7 +152,7 @@ extern void store_background(int pos_x, int pox_y, unsigned char * buffer);
 
 
 extern void draw_floating_text(int pos_x, int pos_y, unsigned char * mask);
-extern void redraw_floating_background(int pos_x, int pos_y, unsigned char * background);
+extern void redraw_floating_background(int pos_x, int pos_y, unsigned char * blk);
 extern void save_floating_background(int pos_x, int pos_y, unsigned char * buffer);
 
 /* draw a horizontal line at vertical pixel y within the logical view window */
