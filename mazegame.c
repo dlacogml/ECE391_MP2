@@ -424,10 +424,9 @@ static void *rtc_thread(void *arg) {
         // Show maze around the player's original position
         (void)unveil_around_player(play_x, play_y);
 
-        set_palette_color(level, 0);
-
         // buffer to store the background
         unsigned char maze_buffer[BLOCK_X_DIM * BLOCK_Y_DIM];
+
         // save the background
         store_background(play_x, play_y, maze_buffer);
         // draw the player to the new position
@@ -436,7 +435,7 @@ static void *rtc_thread(void *arg) {
         show_screen();
         // draw the background back after the plaer leaves
         draw_full_block(play_x, play_y, maze_buffer);
-        int player_color_change = 0;
+
         time_t start;
 
         time(&start);
@@ -457,7 +456,7 @@ static void *rtc_thread(void *arg) {
             // interrupts we want to update the player multiple times so
             // that player velocity is smooth
             ticks = data >> 8;    
-            
+
             total += ticks;
 
             // If the system is completely overwhelmed we better slow down:
@@ -471,8 +470,10 @@ static void *rtc_thread(void *arg) {
             }
 
             while (ticks--) {
+
                 // Lock the mutex
                 pthread_mutex_lock(&mtx);
+
                 // Check to see if a key has been pressed
                 if (next_dir != dir) {
                     // Check if new direction is backwards...if so, do immediately
@@ -545,14 +546,15 @@ static void *rtc_thread(void *arg) {
                     }  
 
                     need_redraw = 1;
+                } else {
+                    if(check_for_fruit(play_x, play_y)) {
+                        need_redraw = 1;
+                    }
                 }
             }
-            player_color_change++;
-            // if statement so that the player's color doesn't change too fast
-            if(player_color_change % 11 == 0)
-                set_palette_color(level, player_color_change);
-
+            
             // if(need_redraw) {
+                
                 // save the background
                 store_background(play_x, play_y, maze_buffer);
                 // draw the character on the new position
@@ -564,7 +566,7 @@ static void *rtc_thread(void *arg) {
             // }
                   
             need_redraw = 0; 
-            
+
             // calculate how much time has passed 
             time_t end;
             time(&end);
