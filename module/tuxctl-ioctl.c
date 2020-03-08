@@ -29,6 +29,27 @@
 #define debug(str, ...) \
 	printk(KERN_DEBUG "%s: " str, __FUNCTION__, ## __VA_ARGS__)
 
+#define ZERO	0xE7
+#define ONE		0x06
+#define TWO		0xC8
+#define THREE	0x8F
+#define FOUR	0x2E
+#define FIVE	0xAD
+#define SIX		0xED
+#define SEVEN	0x86
+#define EIGHT	0xEF
+#define NINE	0xAF
+#define A		0xEE
+#define B		0x6D
+#define C		0xE1
+#define D		0x4F
+#define E		0xE9
+#define F		0xE8
+#define DECIMAL	0x10
+
+static unsigned char letters[] = {ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, A, B, C, D, E, F};
+
+
 /************************ Protocol Implementation *************************/
 
 /* tuxctl_handle_packet()
@@ -65,12 +86,118 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 	      unsigned cmd, unsigned long arg)
 {
     switch (cmd) {
-	case TUX_INIT:
-	case TUX_BUTTONS:
-	case TUX_SET_LED:
-	case TUX_LED_ACK:
-	case TUX_LED_REQUEST:
-	case TUX_READ_LED:
+
+	case TUX_INIT: {
+		unsigned char buffer[2];
+		buffer[0] = MTCP_BIOC_ON;
+		buffer[1] = MTCP_LED_USR;
+		tuxctl_ldsic_put(tty, buffer, 2)
+		return 0;
+	}
+
+	case TUX_BUTTONS: {
+
+		return 0;
+	}
+
+	/* arg - 
+	 *
+	 */
+	case TUX_SET_LED: {
+
+		// get the last four bits in decimal form for the fourth number
+		int fourth_num = arg & 15;
+		unsigned char fourth_letter = letters[fourth_num];
+
+		// get the next four bits from last in decimal form for the third number
+		int third_num = arg & 240;
+		unsigned char third_letter = letters[third_num];
+
+		// get the next four bits from last in decimal form for the second number
+		int second_num = arg & 3840;
+		unsigned char second_letter = letters[second_num];
+
+		// get the next four bits from last in decimal form for the first number
+		int first_num = arg & 61440;
+		unsigned char first_letter = letters[first_num];
+
+		int first_on = arg & 524288;
+		int second_on = arg & 262144;
+		int third_on = arg & 131072;
+		int fourth_on = arg & 65536;
+
+		int first_decimal = arg & 134217728;
+		int second_decimal = arg & 67108864;
+		int third_decimal = arg & 33554432;
+		int fourth_decimal = arg & 16777216;
+
+		unsigned char buffer[6];
+
+		buffer[0] = MTCP_LED_SET;
+		buffer[1] = 0x0F;
+
+
+
+		if(fourth_on) {
+			if(fourth_decimal) {
+				buffer[2] = fourth_letter + DECIMAL;
+			} else {
+				buffer[2] = fourth_letter;
+			}
+
+		} else {
+			if(fourth_decimal) {
+				buffer[2] = DECIMAL;
+			}
+		}
+		if(third_on) {
+			if(third_decimal) {
+				buffer[3] = third_letter + DECIMAL;
+			} else {
+				buffer[3] = third_letter;
+			}
+		} else {
+			if(third_decimal) {
+				buffer[2] = DECIMAL;
+			}
+		}
+		if(second_on) {
+			if(second_decimal) {
+				buffer[4] = second_letter + DECIMAL;
+			} else {
+				buffer[4] = second_letter;
+			}
+		} else {
+			if(second_decimal) {
+				buffer[2] = DECIMAL;
+			}
+		}
+		if(first_on) {
+			if(first_decimal) {
+				buffer[5] = first_letter + DECIMAL;
+			} else {
+				buffer[5] = first_letter;
+			}
+		} else {
+			if(first_decimal) {
+				buffer[2] = DECIMAL;
+			}
+		}
+		return 0;
+	}
+
+	case TUX_LED_ACK: {
+		return 0;
+	}
+
+	case TUX_LED_REQUEST: {
+		return 0;
+	}
+
+	case TUX_READ_LED: {
+		return 0;
+	}
+
 	default:
 	    return -EINVAL;
     }
