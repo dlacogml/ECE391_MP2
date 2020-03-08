@@ -104,86 +104,108 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 	 *
 	 */
 	case TUX_SET_LED: {
-
-		// get the last four bits in decimal form for the fourth number
-		int fourth_num = arg & 15;
-		unsigned char fourth_letter = letters[fourth_num];
-
-		// get the next four bits from last in decimal form for the third number
-		int third_num = arg & 240;
-		unsigned char third_letter = letters[third_num];
-
-		// get the next four bits from last in decimal form for the second number
-		int second_num = arg & 3840;
-		unsigned char second_letter = letters[second_num];
-
-		// get the next four bits from last in decimal form for the first number
-		int first_num = arg & 61440;
-		unsigned char first_letter = letters[first_num];
-
-		int first_on = arg & 524288;
-		int second_on = arg & 262144;
-		int third_on = arg & 131072;
-		int fourth_on = arg & 65536;
-
-		int first_decimal = arg & 134217728;
-		int second_decimal = arg & 67108864;
-		int third_decimal = arg & 33554432;
-		int fourth_decimal = arg & 16777216;
-
+		int temp = arg;
 		unsigned char buffer[6];
 
 		buffer[0] = MTCP_LED_SET;
 		buffer[1] = 0x0F;
 
 
-
-		if(fourth_on) {
-			if(fourth_decimal) {
-				buffer[2] = fourth_letter + DECIMAL;
-			} else {
-				buffer[2] = fourth_letter;
-			}
-
-		} else {
-			if(fourth_decimal) {
-				buffer[2] = DECIMAL;
+		for(int i = 0; i < 4; i++) {
+			int num = temp & 0xF;
+			temp >> 4;
+			unsigned char letter = letters[num];
+			buffer[3 + i] = letter;
+		}
+		for(int j = 0; j < 4; j++) {
+			int turn_on = temp & 0x1;
+			temp >> 1;
+			if(!turn_on) {
+				buffer[4 - j] = 0x0;
 			}
 		}
-		if(third_on) {
-			if(third_decimal) {
-				buffer[3] = third_letter + DECIMAL;
-			} else {
-				buffer[3] = third_letter;
+		temp >> 4;
+		for(int k = 0; k < 4; k++) {
+			int decimal_on = temp & 0x1;
+			temp >> 1;
+			if(decimal_on) {
+				buffer[4 - k] += DECIMAL;
 			}
-		} else {
-			if(third_decimal) {
-				buffer[2] = DECIMAL;
-			}
-		}
-		if(second_on) {
-			if(second_decimal) {
-				buffer[4] = second_letter + DECIMAL;
-			} else {
-				buffer[4] = second_letter;
-			}
-		} else {
-			if(second_decimal) {
-				buffer[2] = DECIMAL;
-			}
-		}
-		if(first_on) {
-			if(first_decimal) {
-				buffer[5] = first_letter + DECIMAL;
-			} else {
-				buffer[5] = first_letter;
-			}
-		} else {
-			if(first_decimal) {
-				buffer[2] = DECIMAL;
-			}
-		}
+		}	
 		return 0;
+
+		// // get the last four bits in decimal form for the fourth number
+		// // change numbers to hex later
+		// int fourth_num = arg & 15;
+		// unsigned char fourth_letter = letters[fourth_num];
+
+		// // get the next four bits from last in decimal form for the third number
+		// int third_num = arg & 240;
+		// unsigned char third_letter = letters[third_num];
+
+		// // get the next four bits from last in decimal form for the second number
+		// int second_num = arg & 3840;
+		// unsigned char second_letter = letters[second_num];
+
+		// // get the next four bits from last in decimal form for the first number
+		// int first_num = arg & 61440;
+		// unsigned char first_letter = letters[first_num];
+
+		// int first_on = arg & 524288;
+		// int second_on = arg & 262144;
+		// int third_on = arg & 131072;
+		// int fourth_on = arg & 65536;
+
+		// int first_decimal = arg & 134217728;
+		// int second_decimal = arg & 67108864;
+		// int third_decimal = arg & 33554432;
+		// int fourth_decimal = arg & 16777216;
+
+		// if(fourth_on) {
+		// 	if(fourth_decimal) {
+		// 		buffer[2] = fourth_letter + DECIMAL;
+		// 	} else {
+		// 		buffer[2] = fourth_letter;
+		// 	}
+
+		// } else {
+		// 	if(fourth_decimal) {
+		// 		buffer[2] = DECIMAL;
+		// 	}
+		// }
+		// if(third_on) {
+		// 	if(third_decimal) {
+		// 		buffer[3] = third_letter + DECIMAL;
+		// 	} else {
+		// 		buffer[3] = third_letter;
+		// 	}
+		// } else {
+		// 	if(third_decimal) {
+		// 		buffer[3] = DECIMAL;
+		// 	}
+		// }
+		// if(second_on) {
+		// 	if(second_decimal) {
+		// 		buffer[4] = second_letter + DECIMAL;
+		// 	} else {
+		// 		buffer[4] = second_letter;
+		// 	}
+		// } else {
+		// 	if(second_decimal) {
+		// 		buffer[4] = DECIMAL;
+		// 	}
+		// }
+		// if(first_on) {
+		// 	if(first_decimal) {
+		// 		buffer[5] = first_letter + DECIMAL;
+		// 	} else {
+		// 		buffer[5] = first_letter;
+		// 	}
+		// } else {
+		// 	if(first_decimal) {
+		// 		buffer[5] = DECIMAL;
+		// 	}
+		// }
 	}
 
 	case TUX_LED_ACK: {
