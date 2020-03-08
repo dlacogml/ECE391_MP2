@@ -91,7 +91,7 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 		unsigned char buffer[2];
 		buffer[0] = MTCP_BIOC_ON;
 		buffer[1] = MTCP_LED_USR;
-		tuxctl_ldsic_put(tty, buffer, 2)
+		tuxctl_ldisc_put(tty, buffer, 2);
 		return 0;
 	}
 
@@ -105,33 +105,39 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 	 */
 	case TUX_SET_LED: {
 		int temp = arg;
+		int i;
+		int j;
+		int k;
 		unsigned char buffer[6];
 
 		buffer[0] = MTCP_LED_SET;
 		buffer[1] = 0x0F;
 
 
-		for(int i = 0; i < 4; i++) {
+		for(i = 0; i < 4; i++) {
 			int num = temp & 0xF;
-			temp >> 4;
-			unsigned char letter = letters[num];
-			buffer[3 + i] = letter;
+			temp = temp >> 4;
+			unsigned char let;
+			let = letters[num];
+			buffer[3 + i] = let;
 		}
-		for(int j = 0; j < 4; j++) {
+		for(j = 0; j < 4; j++) {
 			int turn_on = temp & 0x1;
-			temp >> 1;
+			temp = temp >> 1;
 			if(!turn_on) {
 				buffer[4 - j] = 0x0;
 			}
 		}
-		temp >> 4;
-		for(int k = 0; k < 4; k++) {
+		temp =temp >> 4;
+		for(k = 0; k < 4; k++) {
 			int decimal_on = temp & 0x1;
-			temp >> 1;
+			temp = temp >> 1;
 			if(decimal_on) {
 				buffer[4 - k] += DECIMAL;
 			}
 		}	
+
+		tuxctl_ldisc_put(tty, buffer, 6);
 		return 0;
 
 		// // get the last four bits in decimal form for the fourth number

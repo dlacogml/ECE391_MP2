@@ -51,6 +51,7 @@
 #include "assert.h"
 #include "input.h"
 #include "maze.h"
+#include "module/tuxctl-ioctl.h"
 
 /* set to 1 and compile this file by itself to test functionality */
 #define TEST_INPUT_DRIVER  1
@@ -60,7 +61,7 @@
 
 /* stores original terminal settings */
 static struct termios tio_orig;
-
+static int fd;
 /* 
  * init_input
  *   DESCRIPTION: Initializes the input controller.  As both keyboard and
@@ -206,7 +207,7 @@ void shutdown_input() {
  */
 void display_time_on_tux(int num_seconds) {
 #if (USE_TUX_CONTROLLER != 0)
-#error "Tux controller code is not operational yet."
+// #error "Tux controller code is not operational yet."
 #endif
 }
 
@@ -220,6 +221,13 @@ int main() {
     static const char* const dir_names[4] = {
         "up", "right", "down", "left"
     };
+
+    fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
+    int ldisc_num = N_MOUSE;
+    ioctl(fd, TIOCSETD, &ldisc_num);
+    ioctl(fd, TUX_INIT, 0);
+    ioctl(fd, TUX_SET_LED, 0x0F0F1234);
+
 
     /* Grant ourselves permission to use ports 0-1023 */
     if (ioperm(0, 1024, 1) == -1) {
