@@ -837,10 +837,15 @@ void draw_player_block(int pos_x, int pos_y, unsigned char * blk, unsigned char 
  *   RETURN VALUE: none
  *   SIDE EFFECTS: draws into the build buffer
  */
-void draw_floating_text(int pos_x, int pos_y, unsigned char * mask) {
+void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned char the_color) {
     int dx, dy;          /* loop indices for x and y traversal of block */
     int x_left, x_right; /* clipping limits in horizontal dimension     */
     int y_top, y_bottom; /* clipping limits in vertical dimension       */
+
+    /*edge case for when the player goes to the top of the screen*/
+    if(pos_y < show_y) {
+        pos_y = show_y;
+    }
 
     int float_length = FONT_WIDTH * 15;
 
@@ -851,10 +856,16 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask) {
 
     /* Clip any pixels falling off the left side of screen. */
     if ((x_left = show_x - pos_x) < 0)
-        x_left = 0;
+        x_left = 0; 
+    
+    
     /* Clip any pixels falling off the right side of screen. */
     if ((x_right = show_x + SCROLL_X_DIM - pos_x) > float_length)
         x_right = float_length;
+    
+    
+    
+    
     /* Skip the first x_left pixels in both screen position and block data. */
     pos_x += x_left;
     mask += x_left;
@@ -879,19 +890,20 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask) {
      * y_left rows of pixels in the block data.
      */
     pos_y += y_top;
+    mask += y_top * float_length;
     /* Adjust y_bottom to hold the number of pixel rows to be drawn. */
     y_bottom -= y_top;
 
     /* Draw the clipped image. */
     for (dy = 0; dy < y_bottom; dy++, pos_y++) {
-        for (dx = 0; dx < x_right; dx++, pos_x++) {
-            if(mask[dy * float_length + dx] == 1) {
+        for (dx = 0; dx < x_right; dx++, pos_x++, mask++) {
+            if(*mask == 1) {
                 *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
-                (3 - (pos_x & 3)) * SCROLL_SIZE) = 0x0;
+                (3 - (pos_x & 3)) * SCROLL_SIZE) = the_color;
             }
         }
-            
         pos_x -= x_right;
+        mask += x_left;
     }
 
  }
@@ -906,14 +918,14 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask) {
  *   RETURN VALUE: none
  *   SIDE EFFECTS: draws into the build buffer
  */
-<<<<<<< HEAD
  void save_floating_background(int pos_x, int pos_y, unsigned char * buffer) {
-=======
- void save_floating_background(int pos_x, int pos_y, unsigned char * buffer, 15) {
->>>>>>> e1a44a112537b9e04702df163914b3c75fba22c0
     int dx, dy;          /* loop indices for x and y traversal of block */
     int x_left, x_right; /* clipping limits in horizontal dimension     */
     int y_top, y_bottom; /* clipping limits in vertical dimension       */
+
+    if(pos_y < show_y) {
+        pos_y = show_y;
+    }
 
     int float_length = 15 * FONT_WIDTH;
 
@@ -924,13 +936,15 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask) {
 
     /* Clip any pixels falling off the left side of screen. */
     if ((x_left = show_x - pos_x) < 0)
-        x_left = 0;
+        x_left = 0;    
+    
     /* Clip any pixels falling off the right side of screen. */
     if ((x_right = show_x + SCROLL_X_DIM - pos_x) > float_length)
         x_right = float_length;
+    
     /* Skip the first x_left pixels in both screen position and block data. */
     pos_x += x_left;
-    buffer += x_left;
+    // buffer += x_left;
 
     /*
      * Adjust x_right to hold the number of pixels to be drawn, and x_left
@@ -952,16 +966,18 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask) {
      * y_left rows of pixels in the block data.
      */
     pos_y += y_top;
+    buffer += y_top * float_length;
     /* Adjust y_bottom to hold the number of pixel rows to be drawn. */
     y_bottom -= y_top;
 
     /* Draw the clipped image. */
     for (dy = 0; dy < y_bottom; dy++, pos_y++) {
-        for (dx = 0; dx < x_right; dx++, pos_x++){
+        for (dx = 0; dx < x_right; dx++, pos_x++, buffer++){
             // copy into the buffer of each pixel of that block in the original image
-            buffer[dy * float_length + dx] = *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH + (3 - (pos_x & 3)) * SCROLL_SIZE);
+            *buffer = *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH + (3 - (pos_x & 3)) * SCROLL_SIZE);
         }
         pos_x -= x_right;
+        buffer += x_left;
     }
  }
 
@@ -982,6 +998,9 @@ void redraw_floating_background(int pos_x, int pos_y, unsigned char * blk) {
     int x_left, x_right; /* clipping limits in horizontal dimension     */
     int y_top, y_bottom; /* clipping limits in vertical dimension       */
 
+    if(pos_y < show_y) {
+        pos_y = show_y;
+    }
     int float_length = 15 * FONT_WIDTH;
 
     /* If block is completely off-screen, we do nothing. */
@@ -992,12 +1011,13 @@ void redraw_floating_background(int pos_x, int pos_y, unsigned char * blk) {
     /* Clip any pixels falling off the left side of screen. */
     if ((x_left = show_x - pos_x) < 0)
         x_left = 0;
+    
     /* Clip any pixels falling off the right side of screen. */
     if ((x_right = show_x + SCROLL_X_DIM - pos_x) > float_length)
         x_right = float_length;
     /* Skip the first x_left pixels in both screen position and block data. */
     pos_x += x_left;
-    blk += x_left;
+    // blk += x_left;
 
     /*
      * Adjust x_right to hold the number of pixels to be drawn, and x_left
@@ -1019,7 +1039,7 @@ void redraw_floating_background(int pos_x, int pos_y, unsigned char * blk) {
      * y_left rows of pixels in the block data.
      */
     pos_y += y_top;
-    blk += y_top * float_length;
+    // blk += y_top * float_length;
     /* Adjust y_bottom to hold the number of pixel rows to be drawn. */
     y_bottom -= y_top;
 
@@ -1035,8 +1055,6 @@ void redraw_floating_background(int pos_x, int pos_y, unsigned char * blk) {
     }
 
  }
-
-
 
 /*
  * The functions inside the preprocessor block below rely on functions

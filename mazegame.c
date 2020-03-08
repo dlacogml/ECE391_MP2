@@ -75,6 +75,7 @@ static int sanity_check();
 #define PAN_BORDER      5  /* pan when border in maze squares reaches 5    */
 #define MAX_LEVEL       10 /* maximum level number                         */
 
+
 /* outcome of each level, and of the game as a whole */
 typedef enum {GAME_WON, GAME_LOST, GAME_QUIT} game_condition_t;
 
@@ -87,12 +88,13 @@ typedef struct {
     int time_to_first_fruit;     /* 300 to 120, in steps of -30      */
     int time_between_fruits;     /* 300 to 60, in steps of -30       */
     int tick_usec;         /* 20000 to 5000, in steps of -1750 */
-    int fruits_collected;
     /* dynamic values within a level -- you may want to add more... */
     unsigned int map_x, map_y;   /* current upper left display pixel */
 } game_info_t;
 
 static game_info_t game_info;
+
+int fnum;
 
 /* local functions--see function headers for details */
 static int prepare_maze_level(int level);
@@ -103,6 +105,9 @@ static void move_left(int* xpos);
 static int unveil_around_player(int play_x, int play_y);
 static void *rtc_thread(void *arg);
 static void *keyboard_thread(void *arg);
+
+static char* fruit_strings[7] = {"   an apple!   ", "  eww, grapes  ", "  eh, a peach  ", 
+		" a strawberry  ", "   A BANANA!   ", "  melonwater   ", "   Uh...Dew?   "};
 
 /* 
  * prepare_maze_level
@@ -270,9 +275,8 @@ static int unveil_around_player(int play_x, int play_y) {
     int i, j;            /* loop indices for unveiling maze squares */
 
     /* Check for fruit at the player's position. */
-    if(check_for_fruit (x, y)) {
-        game_info.fruits_collected++;
-    }
+    fnum = check_for_fruit (x, y);
+
     
 
     /* Unveil spaces around the player. */
@@ -397,6 +401,8 @@ static void *rtc_thread(void *arg) {
     int ret;
     int open[NUM_DIRS];
     int goto_next_level = 0;
+    int font_height = 8; 
+    int font_width = 16;
 
     // Loop over levels until a level is lost or quit.
     for (level = 1; (level <= MAX_LEVEL) && (quit_flag == 0); level++) {
@@ -421,7 +427,18 @@ static void *rtc_thread(void *arg) {
         next_dir = DIR_STOP;
 
         // Show maze around the player's original position
+        int fruit_found = 0;
+        int n_fruits = return_n_fruits();
+        int text_timer = 10;
+        int save_fnum;
         (void)unveil_around_player(play_x, play_y);
+
+        if(n_fruits != return_n_fruits()) {
+            save_fnum = fnum;
+            text_timer = 0;
+            fruit_found = 1;
+            n_fruits = return_n_fruits();
+        }
 
         set_palette_color(level, 0);
 
@@ -501,6 +518,12 @@ static void *rtc_thread(void *arg) {
                         goto_next_level = 1;
                         break;
                     }
+                    if(n_fruits != return_n_fruits()) {
+                        text_timer = 0;
+                        fruit_found = 1;
+                        save_fnum = fnum;
+                        n_fruits = return_n_fruits();
+                    }
                 
                     // Record directions open to motion.
                     find_open_directions (play_x / BLOCK_X_DIM, play_y / BLOCK_Y_DIM, open);
@@ -551,53 +574,39 @@ static void *rtc_thread(void *arg) {
             }
 
             player_color_change++;
+
             // if statement so that the player's color doesn't change too fast
             if(player_color_change % 11 == 0)
                 set_palette_color(level, player_color_change);
-            
-            
+
             // save the background
-            store_background(play_x, play_y, maze_buffer);
+            store_background(play_x, play_y, maze_buffer);        
+            
+
+            unsigned char floating_background[font_height * 15 * font_width];
+            save_floating_background(play_x - 52, play_y - 20, floating_background);
+
+
             // draw the character on the new position
             draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));  
-                
+
+
+            if(fruit_found && text_timer < 100){
+                unsigned char floating_mask[font_height * font_width * 15];
+                text_to_mask(fruit_strings[save_fnum - 1], floating_mask);
+                draw_floating_text(play_x - 52, play_y - 20, floating_mask);
+            }
+
             show_screen();
+
             // draw the background back
             draw_full_block(play_x, play_y, maze_buffer);
-            
-            // switch(check_for_fruit(play_x, play_y)) {
-            //     case 0:
-            //         break;
-            //     case 1:
-            //         break;
-            //     case 2:
-            //         break;
-            //     case 3:
-            //         break;
-            //     case 4:
-            //         break;
-            //     case 5:
-            //         break;
-            //     case 6:
-            //         break;
-            //     case 7:
-            //         break;
-            // }
 
-
-            if(check_for_fruit(play_x, play_y)){
-                int font_height = 8; 
-                int font_width = 16;
-                char word[15] = "hellooooooooooo";
-                
-                unsigned char floating_background[font_height * 15 * font_width];
-
-                save_floating_background(play_x - 20, play_y - 20, floating_background);
-                unsigned char floating_mask[font_height * font_width * 15];
-                text_to_mask(word, floating_mask);
-                draw_floating_text(play_x - 20, play_y - 20,floating_mask);
-                redraw_floating_background(play_x - 20, play_y - 20, floating_background);
+            if(fruit_found && text_timer < 100) {
+                text_timer++;
+                redraw_floating_background(play_x - 52, play_y - 20, floating_background);
             }
+
             // calculate how much time has passed 
             time_t end;
             time(&end);
@@ -625,7 +634,6 @@ int main() {
     int ret;
     struct termios tio_new;
     unsigned long update_rate = 32; /* in Hz */
-    game_info.fruits_collected = 0;
 
     pthread_t tid1;
     pthread_t tid2;

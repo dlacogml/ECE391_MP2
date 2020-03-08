@@ -770,6 +770,10 @@ extern void turnToString(int level, int min, int sec, char * str) {
 
 }
 
+extern int return_n_fruits() {
+    return n_fruits;
+}
+
 /* 
  * add_a_fruit_internal
  *   DESCRIPTION: Add a fruit to a random (odd,odd) lattice point in the
