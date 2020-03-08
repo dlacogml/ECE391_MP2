@@ -178,6 +178,7 @@ static void set_CRTC_registers(unsigned short table[NUM_CRTC_REGS]);
 static void set_attr_registers(unsigned char table[NUM_ATTR_REGS * 2]);
 static void set_graphics_registers(unsigned short table[NUM_GRAPHICS_REGS]);
 static void fill_palette();
+static void transparent_palette();
 static void write_font_data();
 static void set_text_mode_3(int clear_scr);
 static void copy_image(unsigned char* img, unsigned short scr_addr);
@@ -837,7 +838,7 @@ void draw_player_block(int pos_x, int pos_y, unsigned char * blk, unsigned char 
  *   RETURN VALUE: none
  *   SIDE EFFECTS: draws into the build buffer
  */
-void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned char the_color) {
+void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned char * background) {
     int dx, dy;          /* loop indices for x and y traversal of block */
     int x_left, x_right; /* clipping limits in horizontal dimension     */
     int y_top, y_bottom; /* clipping limits in vertical dimension       */
@@ -869,6 +870,7 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
     /* Skip the first x_left pixels in both screen position and block data. */
     pos_x += x_left;
     mask += x_left;
+    background += x_left;
 
     /*
      * Adjust x_right to hold the number of pixels to be drawn, and x_left
@@ -891,19 +893,22 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
      */
     pos_y += y_top;
     mask += y_top * float_length;
+    background += y_top * float_length;
     /* Adjust y_bottom to hold the number of pixel rows to be drawn. */
     y_bottom -= y_top;
 
     /* Draw the clipped image. */
     for (dy = 0; dy < y_bottom; dy++, pos_y++) {
-        for (dx = 0; dx < x_right; dx++, pos_x++, mask++) {
+        for (dx = 0; dx < x_right; dx++, pos_x++, mask++, background++) {
             if(*mask == 1) {
+                transparent_palette();
                 *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
-                (3 - (pos_x & 3)) * SCROLL_SIZE) = the_color;
+                (3 - (pos_x & 3)) * SCROLL_SIZE) = *background + 0x9;
             }
         }
         pos_x -= x_right;
         mask += x_left;
+        background += x_left;
     }
 
  }
@@ -1360,6 +1365,51 @@ static void fill_palette() {
 
     /* Start writing at color 0. */
     OUTB(0x03C8, 0x00);
+
+    /* Write all 64 colors from array. */
+    REP_OUTSB(0x03C9, palette_RGB, 64 * 3);
+}
+
+
+static void transparent_palette() {
+    /* 6-bit RGB (red, green, blue) values for first 64 colors */
+    static unsigned char palette_RGB[64][3] = {
+        { 0x00, 0x00, 0x00 },{ 0x00, 0x00, 0x2A },   /* palette 0x00 - 0x0F    */
+        { 0x00, 0x2A, 0x00 },{ 0x00, 0x2A, 0x2A },   /* basic VGA colors       */
+        { 0x2A, 0x00, 0x00 },{ 0x2A, 0x00, 0x2A },
+        { 0x2A, 0x15, 0x00 },{ 0x2A, 0x2A, 0x2A },
+        { 0x15, 0x15, 0x15 },{ 0x15, 0x15, 0x3F },
+        { 0x15, 0x3F, 0x15 },{ 0x15, 0x3F, 0x3F },
+        { 0x3F, 0x15, 0x15 },{ 0x3F, 0x15, 0x3F },
+        { 0x3F, 0x3F, 0x15 },{ 0x3F, 0x3F, 0x3F },
+        { 0x00, 0x00, 0x00 },{ 0x05, 0x05, 0x05 },   /* palette 0x10 - 0x1F    */
+        { 0x08, 0x08, 0x08 },{ 0x0B, 0x0B, 0x0B },   /* VGA grey scale         */
+        { 0x0E, 0x0E, 0x0E },{ 0x11, 0x11, 0x11 },
+        { 0x14, 0x14, 0x14 },{ 0x18, 0x18, 0x18 },
+        { 0x1C, 0x1C, 0x1C },{ 0x20, 0x20, 0x20 },
+        { 0x24, 0x24, 0x24 },{ 0x28, 0x28, 0x28 },
+        { 0x2D, 0x2D, 0x2D },{ 0x32, 0x32, 0x32 },
+        { 0x38, 0x38, 0x38 },{ 0x3F, 0x3F, 0x3F },
+        { 0x3F, 0x3F, 0x3F },{ 0x3F, 0x3F, 0x3F },   /* palette 0x20 - 0x2F    */
+        { 0x00, 0x00, 0x3F },{ 0x00, 0x00, 0x00 },   /* wall and player colors */
+        { 0x00, 0x00, 0x00 },{ 0x00, 0x00, 0x00 },
+        { 0x00, 0x00, 0x00 },{ 0x00, 0x00, 0x00 },
+        { 0x00, 0x00, 0x00 },{ 0x00, 0x00, 0x00 },
+        { 0x00, 0x00, 0x00 },{ 0x00, 0x00, 0x00 },
+        { 0x00, 0x00, 0x00 },{ 0x00, 0x00, 0x00 },
+        { 0x00, 0x00, 0x00 },{ 0x00, 0x00, 0x00 },
+        { 0x10, 0x08, 0x00 },{ 0x18, 0x0C, 0x00 },   /* palette 0x30 - 0x3F    */
+        { 0x20, 0x10, 0x00 },{ 0x28, 0x14, 0x00 },   /* browns for maze floor  */
+        { 0x30, 0x18, 0x00 },{ 0x38, 0x1C, 0x00 },
+        { 0x3F, 0x20, 0x00 },{ 0x3F, 0x20, 0x10 },
+        { 0x20, 0x18, 0x10 },{ 0x28, 0x1C, 0x10 },
+        { 0x3F, 0x20, 0x10 },{ 0x38, 0x24, 0x10 },
+        { 0x3F, 0x28, 0x10 },{ 0x3F, 0x2C, 0x10 },
+        { 0x3F, 0x30, 0x10 },{ 0x3F, 0x20, 0x10 }
+    };
+
+        /* Start writing at color 0. */
+    OUTB(0x03C8, 0x40);
 
     /* Write all 64 colors from array. */
     REP_OUTSB(0x03C9, palette_RGB, 64 * 3);

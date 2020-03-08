@@ -151,7 +151,7 @@ extern void draw_player_block(int pos_x, int pox_y, unsigned char * blk, unsigne
 extern void store_background(int pos_x, int pox_y, unsigned char * buffer);
 
 
-extern void draw_floating_text(int pos_x, int pos_y, unsigned char * mask);
+extern void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned char * background);
 extern void redraw_floating_background(int pos_x, int pos_y, unsigned char * blk);
 extern void save_floating_background(int pos_x, int pos_y, unsigned char * buffer);
 

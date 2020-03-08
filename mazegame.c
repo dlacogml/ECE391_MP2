@@ -74,8 +74,10 @@ static int sanity_check();
 /* a few constants */
 #define PAN_BORDER      5  /* pan when border in maze squares reaches 5    */
 #define MAX_LEVEL       10 /* maximum level number                         */
-
-
+#define text_length     15
+#define floating_text_x 52
+#define floating_text_y 20
+#define text_timer_length   100
 /* outcome of each level, and of the game as a whole */
 typedef enum {GAME_WON, GAME_LOST, GAME_QUIT} game_condition_t;
 
@@ -427,16 +429,16 @@ static void *rtc_thread(void *arg) {
         next_dir = DIR_STOP;
 
         // Show maze around the player's original position
-        int fruit_found = 0;
+        int fruit_found = 0;                        // fruit has not been found yet
         int n_fruits = return_n_fruits();
-        int text_timer = 10;
+        int text_timer = -1;                        // timer for how long the text will last
         int save_fnum;
         (void)unveil_around_player(play_x, play_y);
 
         if(n_fruits != return_n_fruits()) {
             save_fnum = fnum;
-            text_timer = 0;
-            fruit_found = 1;
+            text_timer = 0;                         // set this to 0 because the text has been found so start the timer                 
+            fruit_found = 1;                        // the fruit has been found
             n_fruits = return_n_fruits();
         }
 
@@ -575,7 +577,7 @@ static void *rtc_thread(void *arg) {
 
             player_color_change++;
 
-            // if statement so that the player's color doesn't change too fast
+            // if statement so that the player's color doesn't change too fast - 11 is a pretty arbitrary number, I just chose it because I liked that speed that the player's color changed
             if(player_color_change % 11 == 0)
                 set_palette_color(level, player_color_change);
 
@@ -583,18 +585,18 @@ static void *rtc_thread(void *arg) {
             store_background(play_x, play_y, maze_buffer);        
             
 
-            unsigned char floating_background[font_height * 15 * font_width];
-            save_floating_background(play_x - 52, play_y - 20, floating_background);
+            unsigned char floating_background[font_height * text_length * font_width];
+            save_floating_background(play_x - floating_text_x, play_y - floating_text_y, floating_background);
 
 
             // draw the character on the new position
             draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));  
 
 
-            if(fruit_found && text_timer < 100){
+            if(fruit_found && text_timer < text_timer_length){
                 unsigned char floating_mask[font_height * font_width * 15];
                 text_to_mask(fruit_strings[save_fnum - 1], floating_mask);
-                draw_floating_text(play_x - 52, play_y - 20, floating_mask);
+                draw_floating_text(play_x - floating_text_x, play_y - floating_text_y, floating_mask, floating_background);
             }
 
             show_screen();
@@ -602,9 +604,9 @@ static void *rtc_thread(void *arg) {
             // draw the background back
             draw_full_block(play_x, play_y, maze_buffer);
 
-            if(fruit_found && text_timer < 100) {
+            if(fruit_found && text_timer < text_timer_length) {
                 text_timer++;
-                redraw_floating_background(play_x - 52, play_y - 20, floating_background);
+                redraw_floating_background(play_x - floating_text_x, play_y - floating_text_y, floating_background);
             }
 
             // calculate how much time has passed 
