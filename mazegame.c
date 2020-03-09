@@ -105,6 +105,7 @@ static void move_right(int* xpos);
 static void move_down(int* ypos);
 static void move_left(int* xpos);
 static int unveil_around_player(int play_x, int play_y);
+static void * tux_thread(void * arg);
 static void *rtc_thread(void *arg);
 static void *keyboard_thread(void *arg);
 
@@ -324,9 +325,45 @@ int next_dir = UP;
 int play_x, play_y, last_dir, dir;
 int move_cnt = 0;
 int fd;
+int tux_fd;
 unsigned long data;
 static struct termios tio_orig;
 static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cv =  PTHREAD_COND_INITIALIZER;
+int button_pressed = 0;
+int buttons;
+int prev_but = 0;
+
+
+static void * tux_thread(void * arg) {
+
+    while(winner == 0) {
+        pthread_mutex_lock(&mtx);
+        while(!buttons_pressed) {
+            pthread_cond_wait(&cv, &mtx);
+        }
+        switch(buttons) {
+            case 0x10: {
+                next_dir = DIR_UP;
+                break;
+            }
+            case 0x20: {
+                next_dir = DIR_DOWN;
+                break;
+            }
+            case 0x40: {
+                next_dir = DIR_RIGHT;
+                break;
+            }
+            case 0x80: {
+                next_dir = DIR_LEFT;
+                break;
+            }
+        }
+        pthread_mutex_unlock(&mtx);
+    }
+    return NULL;
+}
 
 /*
  * keyboard_thread
@@ -492,6 +529,17 @@ static void *rtc_thread(void *arg) {
 
             while (ticks--) {
 
+                ioctl(tux_fd, TUX_BUTTONS, &buttons);
+                pthread_mutex_lock(&mtx);
+                if(buttons != prev_but) {
+                    buttons_pressed = 1;
+                }
+                if(buttons_pressed) {
+                    pthread_cond_signal(&cv);
+                }
+                pthread_mutex_unlock(&mtx);
+
+
                 // Lock the mutex
                 pthread_mutex_lock(&mtx);
 
@@ -613,8 +661,18 @@ static void *rtc_thread(void *arg) {
             time_t end;
             time(&end);
             int diff = difftime(end, start);
-            // display the correct level, minutes passed and time passed on the display
-            turnToString(level, diff / 60, diff % 60, str);
+
+
+            int min = diff / 60;
+            int sec = diff % 60;
+            int min_ten = min / 10;
+            int min_one = min % 10;
+            int sec_ten = sec / 10;
+            int sec_one = sec % 10;
+
+
+            // display the correct level, minutes passed and time passed on the display           
+            turnToString(level, min, sec, str);
             show_statusbar(str, level); 
         }  
     }
@@ -623,6 +681,8 @@ static void *rtc_thread(void *arg) {
     
     return 0;
 }
+
+
 
 /*
  * main
@@ -642,6 +702,7 @@ int main() {
 
     // Initialize RTC
     fd = open("/dev/rtc", O_RDONLY, 0);
+    tux_fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
     
     // Enable RTC periodic interrupts at update_rate Hz
     // Default max is 64...must change in /proc/sys/dev/rtc/max-user-freq
@@ -693,6 +754,7 @@ int main() {
         
     // Close RTC
     close(fd);
+    close(tux_fd);
 
     // Print outcome of the game
     if (winner == 1) {    

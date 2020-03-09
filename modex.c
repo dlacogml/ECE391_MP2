@@ -949,7 +949,6 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
     
     /* Skip the first x_left pixels in both screen position and block data. */
     pos_x += x_left;
-    // buffer += x_left;
 
     /*
      * Adjust x_right to hold the number of pixels to be drawn, and x_left

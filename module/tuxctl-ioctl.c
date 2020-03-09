@@ -48,6 +48,32 @@
 #define DECIMAL	0x10
 
 static unsigned char letters[] = {ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, A, B, C, D, E, F};
+static void set_buttons(int buttons, int dirs);
+int swapBits(unsigned int x, unsigned int p1, unsigned int p2, unsigned int n);
+int the_buttons;
+int reset_state = 0;
+char save_led[6];
+
+static void set_buttons(int buttons, int dirs) {
+	int number = 0;
+	buttons = ~buttons;
+	dirs = ~dirs;
+
+	number = 0x0F & buttons;
+	
+	printk("the condition is: %x",((dirs >> 1) & 1) ^ ((dirs >> 2) & 1));
+	if(((dirs >> 1) & 1) ^ ((dirs >> 2) & 1)) {
+		// then swap
+		dirs = (dirs ^ 0x02);
+		dirs = (dirs ^ 0x04); 
+	}
+
+	dirs = dirs << 4;
+	printk("dirs is%x\n",dirs);
+	number = number | dirs;
+
+	the_buttons = number;
+}
 
 
 /************************ Protocol Implementation *************************/
@@ -64,8 +90,33 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
     a = packet[0]; /* Avoid printk() sign extending the 8-bit */
     b = packet[1]; /* values when printing them. */
     c = packet[2];
+	if(MTCP_ACK){
+		if(reset_state == 1) {
+			unsigned char buffer[1];
+			buffer[0] = MTCP_LED_USR;
+			tuxctl_ldisc_put(tty, buffer, 1);
+			reset_state = 2;
+		}
+		else if(reset_state == 2) {
+			tuxctl_ldisc_put(tty, save_led, 6);
+			reset_state = 0;
+		}
+	}
 
-    /*printk("packet : %x %x %x\n", a, b, c); */
+	if(a == MTCP_RESET) {
+		unsigned char buffer[1];
+		buffer[0] = MTCP_BIOC_ON;
+		tuxctl_ldisc_put(tty, buffer, 1);
+		reset_state = 1;
+	}
+
+	if(a == MTCP_BIOC_EVENT) {
+		int buttons = b & 0x0f;
+		int dir = c & 0x0f;
+		set_buttons(buttons, dir);
+	}
+
+    printk("packet : %x %x %x\n", a, b, c);
 }
 
 /******** IMPORTANT NOTE: READ THIS BEFORE IMPLEMENTING THE IOCTLS ************
@@ -91,16 +142,22 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 		unsigned char buffer[2];
 		buffer[0] = MTCP_BIOC_ON;
 		buffer[1] = MTCP_LED_USR;
-		tuxctl_ldisc_put(tty, buffer, 2);
+		// EXPECT_BIOC_EVT = 1;
+		if(tuxctl_ldisc_put(tty, buffer, 2	) != 0) {
+			return -EINVAL;
+		}
 		return 0;
 	}
 
 	case TUX_BUTTONS: {
-
+		int * ptr = (int *) arg;
+		if(copy_to_user(ptr, &the_buttons, 1) != 0) {
+			return -EINVAL;
+		}
 		return 0;
 	}
 
-	/* arg - 
+	/* 
 	 *
 	 */
 	case TUX_SET_LED: {
@@ -113,14 +170,15 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 		buffer[0] = MTCP_LED_SET;
 		buffer[1] = 0x0F;
 
-
+		// check each numbers
 		for(i = 0; i < 4; i++) {
+			unsigned char let;
 			int num = temp & 0xF;
 			temp = temp >> 4;
-			unsigned char let;
 			let = letters[num];
 			buffer[2 + i] = let;
 		}
+		// check which leds are turned on and which are turned off
 		for(j = 0; j < 4; j++) {
 			int turn_on = temp & 0x1;
 			temp = temp >> 1;
@@ -128,7 +186,9 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 				buffer[5 - j] = 0x0;
 			}
 		}
+		// skip the next four bits
 		temp = temp >> 4;
+		// check which decimals are on
 		for(k = 0; k < 4; k++) {
 			int decimal_on = temp & 0x1;
 			temp = temp >> 1;
@@ -137,7 +197,13 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 			}
 		}	
 
-		tuxctl_ldisc_put(tty, buffer, 6);
+		for(i = 0; i < 6; i++) {
+			save_led[i] = buffer[i];
+		}
+
+		if(tuxctl_ldisc_put(tty, buffer, 6) != 0) {
+			return -EINVAL;
+		}
 		return 0;
 	}
 

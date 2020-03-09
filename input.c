@@ -62,6 +62,8 @@
 /* stores original terminal settings */
 static struct termios tio_orig;
 static int fd;
+static int tux_fd;
+int buttons;
 /* 
  * init_input
  *   DESCRIPTION: Initializes the input controller.  As both keyboard and
@@ -132,10 +134,16 @@ cmd_t get_command(dir_t cur_dir) {
     cmd_t command;
     int ch;
 
+
+
+
+
+
     /*
      * If the direction of motion has changed, forget the last
      * direction pushed.  Otherwise, it remains active.
      */
+    
     if (prev_cur != cur_dir) {
         pushed = DIR_STOP;
         prev_cur = cur_dir;
@@ -170,6 +178,15 @@ cmd_t get_command(dir_t cur_dir) {
     }
 #endif
     }
+
+    int r = ioctl(tux_fd, TUX_BUTTONS, (unsigned long) (&buttons));
+    if(r != 0) printf("r: %d\n", r);
+    if(buttons == 0x10) pushed = DIR_UP;
+    if(buttons == 0x20) pushed = DIR_DOWN;
+    if(buttons == 0x30) pushed = DIR_LEFT;
+    if(buttons == 0x40) pushed = DIR_RIGHT;
+
+
 
     /*
      * Once a direction is pushed, that command remains active
@@ -221,29 +238,30 @@ int main() {
     static const char* const dir_names[4] = {
         "up", "right", "down", "left"
     };
-
+    tux_fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
     fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
     int ldisc_num = N_MOUSE;
     ioctl(fd, TIOCSETD, &ldisc_num);
     ioctl(fd, TUX_INIT, 0);
-    ioctl(fd, TUX_SET_LED, 0x0F0F1234);
-
+    ioctl(fd, TUX_SET_LED, 0x07071234);
 
     /* Grant ourselves permission to use ports 0-1023 */
     if (ioperm(0, 1024, 1) == -1) {
         perror("ioperm");
         return 3;
     }
-
+    int buttons = 0;
     init_input();
     while (1) {
-        printf("CURRENT DIRECTION IS %s\n", dir_names[dir]);
-        while ((cmd = get_command(dir)) == TURN_NONE);
-        if (cmd == CMD_QUIT)
-            break;
-        display_time_on_tux(83);
-        printf ("%s\n", cmd_name[cmd]);
-        dir = (dir + cmd) % 4;
+        ioctl(fd, TUX_BUTTONS, &buttons);
+        printf("%x\n",buttons);
+        // printf("CURRENT DIRECTION IS %s\n", dir_names[dir]);
+        // while ((cmd = get_command(dir)) == TURN_NONE);
+        // if (cmd == CMD_QUIT)
+        //     break;
+        // display_time_on_tux(83);
+        // printf ("%s\n", cmd_name[cmd]);
+        // dir = (dir + cmd) % 4;
     }
     shutdown_input();
     return 0;
