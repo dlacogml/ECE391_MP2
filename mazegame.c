@@ -41,6 +41,7 @@
 #include "maze.h"
 #include "modex.h"
 #include "text.h"
+#include "module/tuxctl-ioctl.h"
 
 // New Includes and Defines
 #include <linux/rtc.h>
@@ -108,10 +109,10 @@ static int unveil_around_player(int play_x, int play_y);
 static void * tux_thread(void * arg);
 static void *rtc_thread(void *arg);
 static void *keyboard_thread(void *arg);
+int tux_time(int min, int sec);
 
 static char* fruit_strings[7] = {"   an apple!   ", "  eww, grapes  ", "  eh, a peach  ", 
 		" a strawberry  ", "   A BANANA!   ", "  melonwater   ", "   Uh...Dew?   "};
-
 /* 
  * prepare_maze_level
  *   DESCRIPTION: Prepare for a maze of a given level.  Fills the game_info
@@ -326,21 +327,24 @@ int play_x, play_y, last_dir, dir;
 int move_cnt = 0;
 int fd;
 int tux_fd;
+pthread_t tid3;
+
 unsigned long data;
 static struct termios tio_orig;
 static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t tux_mtx = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cv =  PTHREAD_COND_INITIALIZER;
-int button_pressed = 0;
-int buttons;
-int prev_but = 0;
+volatile int buttons_pressed = 0;
+volatile int buttons;
+volatile int prev_but = 0;
 
 
 static void * tux_thread(void * arg) {
 
     while(winner == 0) {
-        pthread_mutex_lock(&mtx);
+        pthread_mutex_lock(&tux_mtx);
         while(!buttons_pressed) {
-            pthread_cond_wait(&cv, &mtx);
+            pthread_cond_wait(&cv, &tux_mtx);
         }
         switch(buttons) {
             case 0x10: {
@@ -352,15 +356,16 @@ static void * tux_thread(void * arg) {
                 break;
             }
             case 0x40: {
-                next_dir = DIR_RIGHT;
-                break;
-            }
-            case 0x80: {
                 next_dir = DIR_LEFT;
                 break;
             }
+            case 0x80: {
+                next_dir = DIR_RIGHT;
+                break;
+            }
         }
-        pthread_mutex_unlock(&mtx);
+        buttons_pressed = 0;
+        pthread_mutex_unlock(&tux_mtx);
     }
     return NULL;
 }
@@ -528,16 +533,17 @@ static void *rtc_thread(void *arg) {
             }
 
             while (ticks--) {
-
+                //ioctl(tux_fd, TUX_SET_LED, 0x0F0F1534);
                 ioctl(tux_fd, TUX_BUTTONS, &buttons);
-                pthread_mutex_lock(&mtx);
+                pthread_mutex_lock(&tux_mtx);
                 if(buttons != prev_but) {
                     buttons_pressed = 1;
+                    prev_but = buttons;
                 }
                 if(buttons_pressed) {
                     pthread_cond_signal(&cv);
                 }
-                pthread_mutex_unlock(&mtx);
+                pthread_mutex_unlock(&tux_mtx);
 
 
                 // Lock the mutex
@@ -665,11 +671,9 @@ static void *rtc_thread(void *arg) {
 
             int min = diff / 60;
             int sec = diff % 60;
-            int min_ten = min / 10;
-            int min_one = min % 10;
-            int sec_ten = sec / 10;
-            int sec_one = sec % 10;
-
+            
+            int clock = tux_time(min, sec);
+            ioctl(tux_fd, TUX_SET_LED, clock);
 
             // display the correct level, minutes passed and time passed on the display           
             turnToString(level, min, sec, str);
@@ -678,11 +682,29 @@ static void *rtc_thread(void *arg) {
     }
     if (quit_flag == 0)
         winner = 1;
-    
+    pthread_cancel(tid3);
     return 0;
 }
 
+/*
+ *  FUNCTION HEADER AHAHAHAHAHA
+ *
+ */
+int tux_time(int min, int sec) {
+    int time;
+    if(min / 10 == 0) {
+        time = 0x020E0000;
+    } else {
+        time =  0x020F0000;
+    }
 
+
+    time = time | (sec % 10);
+    time = time | ((sec / 10) << 4 );
+    time = time | ((min % 10) << 8 );
+    time = time | ((min / 10) << 12 );
+    return time;
+}
 
 /*
  * main
@@ -703,6 +725,9 @@ int main() {
     // Initialize RTC
     fd = open("/dev/rtc", O_RDONLY, 0);
     tux_fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
+    int ldisc_num = N_MOUSE;
+    ioctl(tux_fd, TIOCSETD, &ldisc_num);
+    ioctl(tux_fd, TUX_INIT, 0);
     
     // Enable RTC periodic interrupts at update_rate Hz
     // Default max is 64...must change in /proc/sys/dev/rtc/max-user-freq
@@ -741,10 +766,12 @@ int main() {
     // Create the threads
     pthread_create(&tid1, NULL, rtc_thread, NULL);
     pthread_create(&tid2, NULL, keyboard_thread, NULL);
+    pthread_create(&tid3, NULL, tux_thread, NULL);
     
     // Wait for all the threads to end
     pthread_join(tid1, NULL);
     pthread_join(tid2, NULL);
+    pthread_join(tid3, NULL);
 
     // Shutdown Display
     clear_mode_X();
@@ -754,7 +781,6 @@ int main() {
         
     // Close RTC
     close(fd);
-    close(tux_fd);
 
     // Print outcome of the game
     if (winner == 1) {    

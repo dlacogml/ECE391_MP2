@@ -61,7 +61,6 @@ static void set_buttons(int buttons, int dirs) {
 
 	number = 0x0F & buttons;
 	
-	printk("the condition is: %x",((dirs >> 1) & 1) ^ ((dirs >> 2) & 1));
 	if(((dirs >> 1) & 1) ^ ((dirs >> 2) & 1)) {
 		// then swap
 		dirs = (dirs ^ 0x02);
@@ -69,7 +68,7 @@ static void set_buttons(int buttons, int dirs) {
 	}
 
 	dirs = dirs << 4;
-	printk("dirs is%x\n",dirs);
+	
 	number = number | dirs;
 
 	the_buttons = number;
@@ -116,7 +115,7 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
 		set_buttons(buttons, dir);
 	}
 
-    printk("packet : %x %x %x\n", a, b, c);
+    // printk("packet : %x %x %x\n", a, b, c);
 }
 
 /******** IMPORTANT NOTE: READ THIS BEFORE IMPLEMENTING THE IOCTLS ************
