@@ -447,6 +447,7 @@ static void *rtc_thread(void *arg) {
     int goto_next_level = 0;
     int font_height = 8; 
     int font_width = 16;
+    int save_time = 0;
 
     // Loop over levels until a level is lost or quit.
     for (level = 1; (level <= MAX_LEVEL) && (quit_flag == 0); level++) {
@@ -534,6 +535,9 @@ static void *rtc_thread(void *arg) {
 
             while (ticks--) {
                 //ioctl(tux_fd, TUX_SET_LED, 0x0F0F1534);
+                // if() {
+
+                // }
                 ioctl(tux_fd, TUX_BUTTONS, &buttons);
                 pthread_mutex_lock(&tux_mtx);
                 if(buttons != prev_but) {
@@ -668,12 +672,15 @@ static void *rtc_thread(void *arg) {
             time(&end);
             int diff = difftime(end, start);
 
-
             int min = diff / 60;
             int sec = diff % 60;
             
-            int clock = tux_time(min, sec);
-            ioctl(tux_fd, TUX_SET_LED, clock);
+            if(diff != save_time) {
+                save_time = diff;
+                int clock = tux_time(min, sec);
+                ioctl(tux_fd, TUX_SET_LED, clock);
+            }
+            
 
             // display the correct level, minutes passed and time passed on the display           
             turnToString(level, min, sec, str);
@@ -686,19 +693,24 @@ static void *rtc_thread(void *arg) {
     return 0;
 }
 
-/*
- *  FUNCTION HEADER AHAHAHAHAHA
- *
+/*  tux_time()
+ *  INTERFACE : helper function used to create the appropriate integer to put into the LED
+ *  input: min - the amount of minutes passed since the game has started
+ *          sec - the amount of seconds passed since the games has started
+ *  output: the time on the LED
+ *  return: the integer value that puts the correct time on the LED
  */
 int tux_time(int min, int sec) {
     int time;
     if(min / 10 == 0) {
+        // if the minutes are only at the ones value, you don't need to turn on the first light
         time = 0x020E0000;
     } else {
+        // turn on all lights and the second decimal
         time =  0x020F0000;
     }
 
-
+    // calculate the correct integer that can put up the right value ont the LED. 
     time = time | (sec % 10);
     time = time | ((sec / 10) << 4 );
     time = time | ((min % 10) << 8 );
