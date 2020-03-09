@@ -75,10 +75,13 @@ static int sanity_check();
 /* a few constants */
 #define PAN_BORDER      5  /* pan when border in maze squares reaches 5    */
 #define MAX_LEVEL       10 /* maximum level number                         */
-#define text_length     15
-#define floating_text_x 52
-#define floating_text_y 20
-#define text_timer_length   100
+#define text_length     15      /*set length of the text*/
+#define FONT_HEIGHT     16                                          /*height of the font*/        
+#define FONT_WIDTH      8       /*width of the font*/ 
+#define float_length    (text_length * FONT_WIDTH)                /*calculate the length of the floating text block*/
+#define floating_text_x (float_length/2)      /**/
+#define floating_text_y 20      /*have the text be 20 pixels above the */
+#define text_timer_length   60          /*set number for how long we want the text to be floating abov wehn the fruit is picked*/
 /* outcome of each level, and of the game as a whole */
 typedef enum {GAME_WON, GAME_LOST, GAME_QUIT} game_condition_t;
 
@@ -338,14 +341,26 @@ volatile int buttons_pressed = 0;
 volatile int buttons;
 volatile int prev_but = 0;
 
-
+/*
+ * tux_thread
+ *   DESCRIPTION: Thread that handles the tux inputs
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: none
+ */
 static void * tux_thread(void * arg) {
 
     while(winner == 0) {
+        // lock the mutex
         pthread_mutex_lock(&tux_mtx);
+        // wait for the button to be pressed
         while(!buttons_pressed) {
             pthread_cond_wait(&cv, &tux_mtx);
         }
+        // move according to the direction that the buttons moved
+        // the hex values are according the mp document that explains how the buttons are as an integer
+        /* 0x10 = UP, 0x20 = DOWN, 0x40 = LEFT, 0x80 = RIGHT */
         switch(buttons) {
             case 0x10: {
                 next_dir = DIR_UP;
@@ -364,6 +379,7 @@ static void * tux_thread(void * arg) {
                 break;
             }
         }
+        // return the value of the buttons_pressed to 0 and unlock the mutex
         buttons_pressed = 0;
         pthread_mutex_unlock(&tux_mtx);
     }
@@ -534,19 +550,20 @@ static void *rtc_thread(void *arg) {
             }
 
             while (ticks--) {
-                //ioctl(tux_fd, TUX_SET_LED, 0x0F0F1534);
-                // if() {
-
-                // }
+                /*call the tux ioctl for the buttons to let the buttons work*/
                 ioctl(tux_fd, TUX_BUTTONS, &buttons);
+                // lock the mutex
                 pthread_mutex_lock(&tux_mtx);
+                // check to see if a button has been pressed
                 if(buttons != prev_but) {
                     buttons_pressed = 1;
                     prev_but = buttons;
                 }
+                // if the button has been pressed, send cond_signal
                 if(buttons_pressed) {
                     pthread_cond_signal(&cv);
                 }
+                // unlock the mutex
                 pthread_mutex_unlock(&tux_mtx);
 
 
@@ -641,8 +658,7 @@ static void *rtc_thread(void *arg) {
 
             // save the background
             store_background(play_x, play_y, maze_buffer);        
-            
-
+            // save the background of the floating text
             unsigned char floating_background[font_height * text_length * font_width];
             save_floating_background(play_x - floating_text_x, play_y - floating_text_y, floating_background);
 
@@ -650,7 +666,7 @@ static void *rtc_thread(void *arg) {
             // draw the character on the new position
             draw_player_block(play_x, play_y, get_player_block(last_dir) ,get_player_mask(last_dir));  
 
-
+            // if a fruit is found, display the floating text for a certain period of time
             if(fruit_found && text_timer < text_timer_length){
                 unsigned char floating_mask[font_height * font_width * 15];
                 text_to_mask(fruit_strings[save_fnum - 1], floating_mask);
@@ -675,6 +691,7 @@ static void *rtc_thread(void *arg) {
             int min = diff / 60;
             int sec = diff % 60;
             
+            // update the LED only when a second has passed
             if(diff != save_time) {
                 save_time = diff;
                 int clock = tux_time(min, sec);
@@ -702,13 +719,8 @@ static void *rtc_thread(void *arg) {
  */
 int tux_time(int min, int sec) {
     int time;
-    if(min / 10 == 0) {
-        // if the minutes are only at the ones value, you don't need to turn on the first light
-        time = 0x020E0000;
-    } else {
-        // turn on all lights and the second decimal
-        time =  0x020F0000;
-    }
+    // turn on all lights and the second decimal
+    time =  0x020F0000;
 
     // calculate the correct integer that can put up the right value ont the LED. 
     time = time | (sec % 10);
@@ -736,6 +748,7 @@ int main() {
 
     // Initialize RTC
     fd = open("/dev/rtc", O_RDONLY, 0);
+    // initialize the tux
     tux_fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
     int ldisc_num = N_MOUSE;
     ioctl(tux_fd, TIOCSETD, &ldisc_num);

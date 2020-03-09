@@ -29,6 +29,8 @@
 #define debug(str, ...) \
 	printk(KERN_DEBUG "%s: " str, __FUNCTION__, ## __VA_ARGS__)
 
+
+/*hex values for the ASCII that can be put on the LEDs*/
 #define ZERO	0xE7
 #define ONE		0x06
 #define TWO		0xCB
@@ -47,29 +49,41 @@
 #define F		0xE8
 #define DECIMAL	0x10
 
+/*array of the hex values according to their ascii values*/
 static unsigned char letters[] = {ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE, A, B, C, D, E, F};
-static void set_buttons(int buttons, int dirs);
-int swapBits(unsigned int x, unsigned int p1, unsigned int p2, unsigned int n);
-int the_buttons;
-int reset_state = 0;
-char save_led[6];
+static void set_buttons(int buttons, int dirs);		/*helper function */
+int the_buttons;								/*global variable for the buttons integer*/
+int reset_state = 0;							/*checking which reset_state it's at*/
+char save_led[6];								/*saving the current LED*/
 
+
+/*
+ * set_buttons
+ *   DESCRIPTION: helper function that creates the integer value for the arg to point
+ * 				  to when TUX_BUTTONS is called
+ *   INPUTS: buttons -- integer value that holds which button is pressed
+ *           dirs -- intever value that holds which dir buttons is pressed
+ *   OUTPUTS: 
+ *   RETURN VALUE: 
+ */
 static void set_buttons(int buttons, int dirs) {
 	int number = 0;
+	// active low so not 
 	buttons = ~buttons;
 	dirs = ~dirs;
 
 	number = 0x0F & buttons;
 	
+	// check if left and down are different
 	if(((dirs >> 1) & 1) ^ ((dirs >> 2) & 1)) {
 		// then swap
 		dirs = (dirs ^ 0x02);
 		dirs = (dirs ^ 0x04); 
 	}
-
+	// bit shift left four times 
 	dirs = dirs << 4;
-	
-	number = number | dirs;
+	// or with the number
+	number = number | dirs;	
 
 	the_buttons = number;
 }
@@ -89,6 +103,8 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
     a = packet[0]; /* Avoid printk() sign extending the 8-bit */
     b = packet[1]; /* values when printing them. */
     c = packet[2];
+
+	/*for reset = waiting for the ACK to set MTCP_LED_USR and return the old LED*/
 	if(MTCP_ACK){
 		if(reset_state == 1) {
 			unsigned char buffer[1];
@@ -102,13 +118,14 @@ void tuxctl_handle_packet (struct tty_struct* tty, unsigned char* packet)
 		}
 	}
 
+	/* When the reset button is pressed, set MTCP_BIOC_ON*/
 	if(a == MTCP_RESET) {
 		unsigned char buffer[1];
 		buffer[0] = MTCP_BIOC_ON;
 		tuxctl_ldisc_put(tty, buffer, 1);
 		reset_state = 1;
 	}
-
+	/* when a button is pressed, get the appropriate integers*/
 	if(a == MTCP_BIOC_EVENT) {
 		int buttons = b & 0x0f;
 		int dir = c & 0x0f;
@@ -136,18 +153,30 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 	      unsigned cmd, unsigned long arg)
 {
     switch (cmd) {
-
+	/*initialize the TUX by setting the MTCP_BIO_ON and MTCP_LED_USR*/
+	/* TUX_INIT
+ 	* info: initialize the tux for Button interrupt-on-change, and put the LED into user mode
+ 	*      input: 
+ 	*      output: 
+ 	*               -1 if invalid
+ 	*              0 if successful
+	*/  
 	case TUX_INIT: {
 		unsigned char buffer[2];
-		buffer[0] = MTCP_BIOC_ON;
-		buffer[1] = MTCP_LED_USR;
-		// EXPECT_BIOC_EVT = 1;
+		buffer[0] = MTCP_BIOC_ON;						// button interrupt on change is on
+		buffer[1] = MTCP_LED_USR;						// led display into user mode
 		if(tuxctl_ldisc_put(tty, buffer, 2	) != 0) {
 			return -EINVAL;
 		}
 		return 0;
 	}
-
+	/* TUX_BUTTONS
+ 	* info: send to the user the correct buttons integer
+ 	*      input: pointer to an integer
+ 	*      output: 
+ 	*               -1 if invalid
+ 	*              0 if successful
+	*/
 	case TUX_BUTTONS: {
 		int * ptr = (int *) arg;
 		if(copy_to_user(ptr, &the_buttons, 1) != 0) {
@@ -156,9 +185,15 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 		return 0;
 	}
 
-	/* 
-	 *
-	 */
+	/* TUX_BUTTONS
+ 	* info: turn on the correct LEDs
+ 	*      input: arg - 32-bit integer of the following form: The low 16-bits specify a number whose
+	*		hexadecimal value is to be displayed on the 7-segment displays. The low 4 bits of the third byte
+	*		specifies which LED’s should be turned on. The low 4 bits of the highest byte (bits 27:24) specify
+ 	*      output: 
+ 	*               -1 if invalid
+ 	*              0 if successful
+	*/
 	case TUX_SET_LED: {
 		int temp = arg;
 		int i;
@@ -166,6 +201,7 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 		int k;
 		unsigned char buffer[6];
 
+		// set LED to on
 		buffer[0] = MTCP_LED_SET;
 		buffer[1] = 0x0F;
 
@@ -195,7 +231,7 @@ tuxctl_ioctl (struct tty_struct* tty, struct file* file,
 				buffer[5 - k] += DECIMAL;
 			}
 		}	
-
+		// save the current state for if the reset button is pressed
 		for(i = 0; i < 6; i++) {
 			save_led[i] = buffer[i];
 		}

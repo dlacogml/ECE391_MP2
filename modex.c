@@ -70,8 +70,11 @@
 #define SCREEN_SIZE             (SCROLL_SIZE * 4 + 1)
 #define BUILD_BUF_SIZE          (SCREEN_SIZE + 20000)
 #define BUILD_BASE_INIT         ((BUILD_BUF_SIZE - SCREEN_SIZE) / 2)
-#define FONT_HEIGHT             16              
+#define FONT_HEIGHT             16                                          /*height of the font*/        
 #define STATUS_BAR_SIZE         ((FONT_HEIGHT + 2) * IMAGE_X_DIM)           /*font height + 1 pixel above and 1 pixel belo times the width of the screen*/
+#define string_length           15                                          /*set length of the string for the floating text*/
+#define FONT_WIDTH              8
+#define float_length            (string_length * FONT_WIDTH)                /*calculate the length of the floating text block*/
 
 /* Mode X and general VGA parameters */
 #define VID_MEM_SIZE            131072
@@ -828,11 +831,11 @@ void draw_player_block(int pos_x, int pos_y, unsigned char * blk, unsigned char 
 
 /*
  * draw_floating_text
- *   DESCRIPTION: Draw a BLOCK_X_DIM x BLOCK_Y_DIM block at absolute
+ *   DESCRIPTION: Draw a float_length x FONT_HEIGHT block at absolute
  *                coordinates.  Mask any portion of the block that's not 1
  *   INPUTS: (pos_x,pos_y) -- coordinates of upper left corner of block
  *           blk -- image data for block (one byte per pixel, as a C array
- *                  of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM])
+ *                  of dimensions [float_length][FONT_HEIGHT])
  *           mask - mask data for block that should be copied as a C array of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM]
  *   OUTPUTS: none
  *   RETURN VALUE: none
@@ -847,8 +850,6 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
     if(pos_y < show_y) {
         pos_y = show_y;
     }
-
-    int float_length = FONT_WIDTH * 15;
 
     /* If block is completely off-screen, we do nothing. */
     if (pos_x + float_length <= show_x || pos_x >= show_x + SCROLL_X_DIM ||
@@ -870,7 +871,7 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
     /* Skip the first x_left pixels in both screen position and block data. */
     pos_x += x_left;
     mask += x_left;
-    background += x_left;
+    // background += x_left;
 
     /*
      * Adjust x_right to hold the number of pixels to be drawn, and x_left
@@ -892,7 +893,7 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
      * y_left rows of pixels in the block data.
      */
     pos_y += y_top;
-    mask += y_top * float_length;
+    // mask += y_top * float_length;
     background += y_top * float_length;
     /* Adjust y_bottom to hold the number of pixel rows to be drawn. */
     y_bottom -= y_top;
@@ -902,8 +903,15 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
         for (dx = 0; dx < x_right; dx++, pos_x++, mask++, background++) {
             if(*mask == 1) {
                 transparent_palette();
-                *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
-                (3 - (pos_x & 3)) * SCROLL_SIZE) = *background + 0x9;
+                // check to make sure the color doesn't go over 63
+                if(*background + 0x3 > 63) {
+                    *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
+                    (3 - (pos_x & 3)) * SCROLL_SIZE) = 63;
+                } else {
+                    *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
+                    (3 - (pos_x & 3)) * SCROLL_SIZE) = *background + 0x9;
+                }
+                
             }
         }
         pos_x -= x_right;
@@ -914,11 +922,11 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
  }
 
 /*
- * store_background
+ * save_floating_background
  *   DESCRIPTION: save the background image into the buffer
  *   INPUTS: (pos_x,pos_y) -- coordinates of upper left corner of block
  *           buffer -- image data for block (one byte per pixel, as a C array
- *                  of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM])
+ *                  of dimensions [FONT_HEIGHT][float_length])
  *   OUTPUTS: none
  *   RETURN VALUE: none
  *   SIDE EFFECTS: draws into the build buffer
@@ -928,11 +936,10 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
     int x_left, x_right; /* clipping limits in horizontal dimension     */
     int y_top, y_bottom; /* clipping limits in vertical dimension       */
 
+    // if it's at the top of the screen, save from the top of the screen
     if(pos_y < show_y) {
         pos_y = show_y;
     }
-
-    int float_length = 15 * FONT_WIDTH;
 
     /* If block is completely off-screen, we do nothing. */
     if (pos_x + float_length <= show_x || pos_x >= show_x + SCROLL_X_DIM ||
@@ -987,11 +994,11 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
 
  /*
  * redraw_floating_background
- *   DESCRIPTION: Draw a BLOCK_X_DIM x BLOCK_Y_DIM block at absolute
+ *   DESCRIPTION: Draw a float_length x FONT_HEIGHT block at absolute
  *                coordinates.  Mask any portion of the block that's not 1
  *   INPUTS: (pos_x,pos_y) -- coordinates of upper left corner of block
  *           blk -- image data for block (one byte per pixel, as a C array
- *                  of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM])
+ *                  of dimensions [FONT_HEIGHT][float_length])
  *           mask - mask data for block that should be copied as a C array of dimensions [BLOCK_Y_DIM][BLOCK_X_DIM]
  *   OUTPUTS: none
  *   RETURN VALUE: none
@@ -1002,10 +1009,10 @@ void redraw_floating_background(int pos_x, int pos_y, unsigned char * blk) {
     int x_left, x_right; /* clipping limits in horizontal dimension     */
     int y_top, y_bottom; /* clipping limits in vertical dimension       */
 
+    /*redraw starting at the top of the screen*/
     if(pos_y < show_y) {
         pos_y = show_y;
     }
-    int float_length = 15 * FONT_WIDTH;
 
     /* If block is completely off-screen, we do nothing. */
     if (pos_x + float_length <= show_x || pos_x >= show_x + SCROLL_X_DIM ||
@@ -1369,7 +1376,15 @@ static void fill_palette() {
     REP_OUTSB(0x03C9, palette_RGB, 64 * 3);
 }
 
-
+/*
+ * transparent_palette
+ *   DESCRIPTION: Fill VGA palette with necessary colors for the maze game.
+ *                Only the second 64 (of 256) colors are written.
+ *   INPUTS: none
+ *   OUTPUTS: none
+ *   RETURN VALUE: none
+ *   SIDE EFFECTS: changes the second 64 palette colors
+ */
 static void transparent_palette() {
     /* 6-bit RGB (red, green, blue) values for first 64 colors */
     static unsigned char palette_RGB[64][3] = {
@@ -1407,7 +1422,7 @@ static void transparent_palette() {
         { 0x3F, 0x30, 0x10 },{ 0x3F, 0x20, 0x10 }
     };
 
-        /* Start writing at color 0. */
+        /* Start writing at color 64 */
     OUTB(0x03C8, 0x40);
 
     /* Write all 64 colors from array. */
