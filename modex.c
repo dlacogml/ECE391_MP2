@@ -904,14 +904,8 @@ void draw_floating_text(int pos_x, int pos_y, unsigned char * mask, unsigned cha
             if(*mask == 1) {
                 transparent_palette();
                 // check to make sure the color doesn't go over 63
-                if(*background + 0x3 > 63) {
-                    *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
-                    (3 - (pos_x & 3)) * SCROLL_SIZE) = 63;
-                } else {
-                    *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
-                    (3 - (pos_x & 3)) * SCROLL_SIZE) = *background + 0x9;
-                }
-                
+                 *(img3 + (pos_x >> 2) + pos_y * SCROLL_X_WIDTH +
+                (3 - (pos_x & 3)) * SCROLL_SIZE) = *background + 63;
             }
         }
         pos_x -= x_right;
@@ -1386,8 +1380,10 @@ static void fill_palette() {
  *   SIDE EFFECTS: changes the second 64 palette colors
  */
 static void transparent_palette() {
+    int i;
+    int j;
     /* 6-bit RGB (red, green, blue) values for first 64 colors */
-    static unsigned char palette_RGB[64][3] = {
+    unsigned char palette_RGB[64][3] = {
         { 0x00, 0x00, 0x00 },{ 0x00, 0x00, 0x2A },   /* palette 0x00 - 0x0F    */
         { 0x00, 0x2A, 0x00 },{ 0x00, 0x2A, 0x2A },   /* basic VGA colors       */
         { 0x2A, 0x00, 0x00 },{ 0x2A, 0x00, 0x2A },
@@ -1421,6 +1417,17 @@ static void transparent_palette() {
         { 0x3F, 0x28, 0x10 },{ 0x3F, 0x2C, 0x10 },
         { 0x3F, 0x30, 0x10 },{ 0x3F, 0x20, 0x10 }
     };
+
+    for(i = 0; i < 64; i++) {
+        for(j = 0; j < 3; j++) {
+            if((palette_RGB[i][j] + 63) / 2 > 63) {
+                palette_RGB[i][j] = 63;
+            } else {
+                palette_RGB[i][j] = (palette_RGB[i][j] + 63) / 2;
+            }
+
+        }
+    }
 
         /* Start writing at color 64 */
     OUTB(0x03C8, 0x40);
