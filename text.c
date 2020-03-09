@@ -41,7 +41,7 @@
 
 #define STATUS_BAR_HEIGHT       (FONT_HEIGHT + 2)       /* height of the font plus 1 pixel above and 1 pixel below*/
 #define IMAGE_X_DIM             320
-
+#define string_length           15                      /*length of the string*/
 /*
  * text_to_graphics
  *   DESCRIPTION: Given a string, produce a buffer that holds a graphical image of the ASCII characters in the string 
@@ -91,40 +91,41 @@ unsigned char * text_to_graphics(char * str, unsigned char * buffer, unsigned ch
     return buffer;
 }
 
-/* 
- *
+/*
+ * text_to_mask
+ *   DESCRIPTION: Given a string, produce a buffer that holds a graphical image of the ASCII characters in the string 
+ *   INPUTS: str - the string to be put into the buffer
+ *           buffer - buffer that has the graphical image of the ASCII characters
+ *   OUTPUTS: the string input
+ *   RETURN VALUE: the buffer unsigned char*
+ *   SIDE EFFECTS: changes the buffer
  */
 void text_to_mask(char * str, unsigned char * buffer) {
     int curr;
     int i;
     int j;
     int index;
-    
-    FILE * fp;
-    fp = fopen ("file.txt", "w+");
 
+    // calculate the float_length
+    int float_length = string_length * FONT_WIDTH;
 
-    int float_length = 15 * FONT_WIDTH;
-
-    for(i = 0; i < 15; i++) {
+    // pase through each letter
+    for(i = 0; i < string_length; i++) {
         for(j = 0; j < FONT_HEIGHT; j++) {
-
             unsigned char letter = font_data[(int) str[i]][j];
+            
             for(curr = 0; curr < FONT_WIDTH; curr++) {
-
+                // calculate the index
                 index = j * float_length + ((i * FONT_WIDTH) + curr); 
-
+                // if it's not 0, then put 1 to create the mask
                 if((letter & 0x80 >> curr) == 0x0) {
                     buffer[index] = 0;
-                    fprintf(fp,"%d", buffer[index]);
                 } else {
                     buffer[index] = 1;
-                    fprintf(fp,"%d", buffer[index]);
                 }
             }
         }
     }
-    fclose(fp);
 }
 
 /* 
